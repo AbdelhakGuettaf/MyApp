@@ -1,0 +1,68 @@
+import {
+  addDispatcher,
+  DispatcherType,
+} from "../components/Dispatchers/Dispatchers.slice";
+import { UsersProps } from "./ScreenProps";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import React, { useEffect, useState } from "react";
+import { AntDesign } from "@expo/vector-icons";
+import {
+  Button,
+  Center,
+  CheckIcon,
+  FormControl,
+  Heading,
+  HStack,
+  Input,
+  InputRightAddon,
+  Modal,
+  Select,
+  Text,
+  TextArea,
+  WarningOutlineIcon,
+} from "native-base";
+import { ScrollView } from "react-native-gesture-handler";
+import { getData, getUsers } from "../app/utils";
+import { Dispatchers } from "../components/Dispatchers/Dispatchers";
+
+const UsersScreen: React.FC<UsersProps> = ({ navigation, route }) => {
+  const dispatch = useAppDispatch();
+  const STATE = useAppSelector((state) => state);
+  const [filter, setFilter] = useState();
+
+  useEffect(() => {
+    getUsers().then((res) =>
+      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+    );
+  }, []);
+
+  return (
+    <>
+      <Select
+        placeholder="Filter Parcels"
+        fontSize={"md"}
+        textAlign="center"
+        color={"gray.500"}
+        borderRadius="md"
+        onValueChange={(text: any) => setFilter(text)}
+        dropdownIcon={
+          <AntDesign
+            name="caretdown"
+            style={{ marginRight: 15 }}
+            size={15}
+            color="gray"
+          />
+        }
+      >
+        <Select.Item label="Active Parcels" value="active" />
+        <Select.Item label="All Parcels" value="all" />
+        <Select.Item label="Confirmed Parcels" value="Awaiting Pickup" />
+        <Select.Item label="In Progress" value="Delivery in Progress" />
+        <Select.Item label="Completed" value="Delivery Complete" />
+      </Select>
+      <Dispatchers />
+    </>
+  );
+};
+
+export default UsersScreen;

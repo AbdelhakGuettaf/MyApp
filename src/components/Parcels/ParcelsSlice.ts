@@ -77,13 +77,12 @@ export const ParcelSlice = createSlice({
     addParcel: (state, action: PayloadAction<ParcelType>) => {
       let checker = true;
       state.map((parcel) => {
-        if (parcel.tracking === action.payload.tracking)
-          return (checker = false);
+        if (parcel.id === action.payload.id) return (checker = false);
       });
       if (checker) state.push(action.payload);
     },
     editParcelStat: (state, action: PayloadAction<ParcelType>) => {
-      state.map((parcel, index) => {
+      state.map((parcel) => {
         if (parcel.id === action.payload.id) {
           parcel.icon = action.payload.icon;
           parcel.color = action.payload.color;
@@ -94,16 +93,19 @@ export const ParcelSlice = createSlice({
   },
   extraReducers: (buider) => {
     buider.addCase(updateStatus.fulfilled, (state, action) => {
+      let checker = true;
       state.map((parcel) => {
         if (parcel.id === action.payload.id) {
           parcel.color = action.payload.color;
           parcel.icon = action.payload.icon;
           parcel.status = action.payload.status;
+          return (checker = false);
         }
       });
+      if (checker) state.push(action.payload);
     });
     buider.addCase(updateStatus.rejected, (state, action) => {
-      console.log(action.error);
+      alert(action.error);
     });
   },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./src/app/firebaseConfig";
+import { InitApp } from "./src/app/firebaseConfig";
 import { Provider } from "react-redux";
 import { store } from "./src/store/store";
 import "react-native-gesture-handler";
@@ -15,6 +15,7 @@ LogBox.ignoreLogs([
 ]);
 
 export default function App() {
+  InitApp;
   const [loggedIn, setLoggedIn] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {

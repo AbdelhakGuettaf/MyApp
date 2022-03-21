@@ -100,7 +100,7 @@ export const confirmParcel = async (parcel: ParcelType) => {
   const PARCELS_COL = collection(db, "parcels");
   const DOC_REF = doc(
     collection(db, "main", "users", UserInfo.uid),
-    "myParcels"
+    "userData"
   );
   const PARCEL_REF = doc(collection(db, "parcels"), parcel.id);
   await updateDoc(DOC_REF, {
@@ -109,4 +109,13 @@ export const confirmParcel = async (parcel: ParcelType) => {
   await updateDoc(PARCEL_REF, {
     deliveredBy: UserInfo.uid,
   });
+};
+
+export const getUsers = async () => {
+  const COLL_REF = collection(db, "main", "userList", "users");
+  const data: DocumentData[] = [];
+  await getDocs(COLL_REF).then((snapshot) => {
+    snapshot.forEach((doc) => data.push(doc.data() as DocumentData));
+  });
+  return data;
 };

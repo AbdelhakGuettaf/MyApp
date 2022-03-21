@@ -26,6 +26,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../app/firebaseConfig";
+import UsersScreen from "../screens/User.screen";
 
 interface AppTabsProps {}
 
@@ -88,17 +89,11 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       "userData",
       "document"
     ).then((res) => {
+      dispatch(setParcels(res?.parcels));
       if (res?.admin) {
         userPerm = true;
         dispatch(setUserPerm());
       }
-    });
-    getData(
-      `/main/users/${auth.currentUser?.uid}`,
-      "myParcels",
-      "document"
-    ).then((res) => {
-      dispatch(setParcels(res?.parcels));
     });
     const qLess = await getDocs(COLL_REF);
     const queued = await getDocs(q);
@@ -244,7 +239,7 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
           {UserInfo.admin ? (
             <Tab.Screen
               name="Users"
-              component={SettingsScreen}
+              component={UsersScreen}
               options={{
                 headerTitle: "Users",
                 headerLeft: () => (
