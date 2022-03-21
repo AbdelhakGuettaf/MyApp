@@ -28,9 +28,9 @@ const initialState: ParcelType[] = [];
 export const updateStatus = createAsyncThunk(
   "Parcels/updateStatus",
   async (parcel: ParcelType) => {
-    let newStatus = "";
-    let newIcon = "";
-    let newColor = "";
+    let newStatus = parcel.status;
+    let newIcon = parcel.icon;
+    let newColor = parcel.color;
     switch (parcel.status) {
       case "Awaiting Confirmation":
         newStatus = "Awaiting Pickup";
