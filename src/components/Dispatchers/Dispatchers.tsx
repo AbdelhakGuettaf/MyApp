@@ -6,7 +6,6 @@ interface DispatchersProps {}
 
 export const Dispatchers: React.FC<DispatchersProps> = ({}) => {
   const dispatchers = useAppSelector((state) => state.Dispatchers);
-
   return (
     <>
       {dispatchers.map((user, key) => (

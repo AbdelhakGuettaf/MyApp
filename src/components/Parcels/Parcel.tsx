@@ -19,10 +19,13 @@ import {
   Pressable,
   Divider,
 } from "native-base";
-import { ParcelType } from "./ParcelsSlice";
+import { ParcelType, deleteParcel } from "./ParcelsSlice";
 import { callNumber, confirmParcel } from "../../app/utils";
 import { updateStatus } from "./ParcelsSlice";
-import { useAppDispatch } from "../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { Alert } from "react-native";
+import { deleteDoc, doc } from "firebase/firestore";
+import { db } from "../../app/firebaseConfig";
 
 interface ParcelProps {
   parcel: ParcelType;
@@ -44,6 +47,8 @@ export const Parcel: React.FC<ParcelProps> = ({
   },
 }) => {
   const dispatch = useAppDispatch();
+  const { admin } = useAppSelector((state) => state.UserInfo);
+  const Dispatchers = useAppSelector((state) => state.Dispatchers);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const toggleModal = () => {
     setModalVisible(!modalVisible);
@@ -58,8 +63,6 @@ export const Parcel: React.FC<ParcelProps> = ({
         return "yellow.400";
       case "Delivery Complete":
         return "success.600";
-      default:
-        return "Black";
     }
   };
   const modalButtonName = () => {
@@ -75,12 +78,56 @@ export const Parcel: React.FC<ParcelProps> = ({
         result = "Delivered!";
         break;
       case "Delivery Complete":
+        if (admin) {
+          return (result = "Recieved Payment!");
+        }
         result = "Ok";
         break;
       default:
-        return "Black";
+        return "Back";
     }
     return result;
+  };
+  const showConfirmDialog = () => {
+    return Alert.alert(
+      "Are your sure?",
+      "Are you sure you want to delete this parcel?",
+      [
+        // The "Yes" button
+        {
+          text: "Yes",
+          onPress: async () => {
+            if (parcel.status === "Awaiting Confirmation") {
+              await deleteDoc(doc(db, "unConfirmedParcels", parcel.id))
+                .then(
+                  () => (
+                    dispatch(deleteParcel(parcel.id)), setModalVisible(false)
+                  )
+                )
+                .catch((e) => {
+                  throw new Error(e);
+                });
+              setModalVisible(false);
+              return;
+            }
+            await deleteDoc(doc(db, "parcels", parcel.id))
+              .then(
+                () => (
+                  dispatch(deleteParcel(parcel.id)), setModalVisible(false)
+                )
+              )
+              .catch((e) => {
+                throw new Error(e);
+              });
+          },
+        },
+        // The "No" button
+        // Does nothing but dismiss the dialog when tapped
+        {
+          text: "No",
+        },
+      ]
+    );
   };
   return (
     <>
@@ -89,24 +136,27 @@ export const Parcel: React.FC<ParcelProps> = ({
           bg="white"
           m="1.5"
           borderRadius="lg"
-          paddingY="3"
-          paddingX="2"
+          paddingY="2"
+          paddingX="1.5"
           shadow="3"
         >
-          <HStack>
+          <HStack width={"full"} overflow="hidden">
             <View marginY="auto" maxW={"1/5"}>
               <Octicons name="package" size={55} color="tomato" />
             </View>
 
-            <VStack marginLeft="4" flexGrow={1} maxW={"3/5"}>
+            <VStack marginLeft="2" flexGrow={1} maxW={"3/5"}>
               <HStack>
                 <Heading fontSize="md" isTruncated>
                   {parcelName}
                 </Heading>
               </HStack>
+              <Text fontSize="xs" color="gray.500">
+                To : {destination}
+              </Text>
               <HStack>
-                <Text marginLeft="2" fontSize="xs" color="gray.500">
-                  To : {destination}
+                <Text fontSize="xs" color="gray.500">
+                  Date: {createdAt}
                 </Text>
                 <Text
                   bg="tomato"
@@ -114,19 +164,17 @@ export const Parcel: React.FC<ParcelProps> = ({
                   paddingX="0.5"
                   color="white"
                   fontSize="xs"
-                  marginLeft="2"
+                  marginLeft="1"
                 >
                   {paymentValue} DA
                 </Text>
               </HStack>
-              <Text marginLeft="2" fontSize="xs" color="gray.500">
-                Date: {createdAt}
-              </Text>
-              <Text marginLeft="2" fontSize="xs" color="gray.500">
+
+              <Text fontSize="xs" color="gray.500">
                 {tracking}
               </Text>
             </VStack>
-            <View marginY="auto" flexGrow={0}>
+            <View m="auto" flexGrow={0}>
               <View alignItems={"center"}>
                 <FontAwesome5 name={icon} size={30} color={color} />
 
@@ -143,28 +191,34 @@ export const Parcel: React.FC<ParcelProps> = ({
           </HStack>
         </View>
       </Pressable>
+
       <Modal isOpen={modalVisible} onClose={toggleModal} size="xl">
         <Modal.Content maxH="360">
           <Modal.CloseButton />
           <Modal.Header>
             <Text isTruncated maxW={"4/5"}>
-              Recepient Name: {`   `}
-              {parcelName}
+              Recepient Name: {parcelName}
             </Text>
             <Divider my="1" />
-            <Text>
-              Destination: {`   `}
-              {destination}
-            </Text>
+            <Text>Destination: {destination}</Text>
+            <Divider my="1" />
+            <Text>Date: {createdAt}</Text>
             <Divider my="1" />
             <Text>
-              Date: {`   `}
-              {createdAt}
+              Delivered by:
+              <Text color={"info.600"} fontWeight="bold">
+                {Dispatchers.map((dispatcher) => {
+                  if (dispatcher.id === parcel.deliveredBy)
+                    return (
+                      " " + dispatcher.firstName + " " + dispatcher.lastName
+                    );
+                })}
+              </Text>
             </Text>
             <Divider my="1" />
             <View>
               <HStack>
-                <Text>Status:{`   `}</Text>
+                <Text>Status: </Text>
                 <Text fontWeight={"bold"} color={statusModalField()}>
                   {status}
                 </Text>
@@ -177,25 +231,9 @@ export const Parcel: React.FC<ParcelProps> = ({
             </ScrollView>
           </Modal.Body>
           <Modal.Footer flexDirection={"row"}>
-            <View alignSelf={"flex-start"} flexGrow="1">
-              <View alignSelf={"flex-start"} top="2">
-                <Pressable
-                  onPress={() => callNumber(phoneNumber)}
-                  p="0.5"
-                  bg={"green.600"}
-                  borderRadius={"md"}
-                >
-                  <HStack p="0.5">
-                    <MaterialIcons name="call" size={20} color="black" />
-                    <Text fontSize={"sm"} color="white">
-                      {phoneNumber}
-                    </Text>
-                  </HStack>
-                </Pressable>
-              </View>
-            </View>
-            <Button.Group space={2}>
+            <Button.Group space={"1"}>
               <Button
+                p="1"
                 variant="ghost"
                 colorScheme="blueGray"
                 onPress={() => {
@@ -205,13 +243,45 @@ export const Parcel: React.FC<ParcelProps> = ({
                 Cancel
               </Button>
               <Button
+                p="1"
+                leftIcon={<MaterialIcons name="call" size={20} color="black" />}
+                bgColor={"green.600"}
+                onPress={() => {
+                  callNumber(phoneNumber);
+                }}
+              >
+                {phoneNumber}
+              </Button>
+              {admin ? (
+                <Button
+                  p="1"
+                  bgColor={"warning.700"}
+                  onPress={() => {
+                    showConfirmDialog();
+                  }}
+                >
+                  Delete
+                </Button>
+              ) : (
+                <></>
+              )}
+              <Button
+                p="1.5"
                 bgColor={"tomato"}
                 onPress={() => {
-                  dispatch(updateStatus(parcel));
-                  if (parcel.status === "Awaiting Confirmation") {
-                    confirmParcel(parcel);
-                  }
                   setModalVisible(false);
+                  if (parcel.status === "Awaiting Confirmation" && admin)
+                    // admins cannot accept deliveries
+                    return;
+                  if (parcel.status === "Delivery Complete" && !admin) {
+                    // if delivery is compelete only an admin can call updateStatus() thunk
+                    setModalVisible(false);
+                    return;
+                  }
+                  dispatch(updateStatus(parcel)); //Thunk
+                  if (parcel.status === "Awaiting Confirmation") {
+                    confirmParcel(parcel); //This function adds the parcel id to the parcels array in the userData
+                  }
                 }}
               >
                 {modalButtonName()}

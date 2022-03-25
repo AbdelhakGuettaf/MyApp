@@ -1,29 +1,10 @@
 import { Parcels } from "../components/Parcels/Parcels";
 import { MyParcelsProps } from "./ScreenProps";
-import { useAppDispatch, useAppSelector } from "../app/hooks";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { AntDesign } from "@expo/vector-icons";
-
-import {
-  Button,
-  Center,
-  CheckIcon,
-  FormControl,
-  Heading,
-  HStack,
-  Input,
-  InputRightAddon,
-  Modal,
-  Select,
-  Text,
-  TextArea,
-  WarningOutlineIcon,
-} from "native-base";
-import { ScrollView } from "react-native-gesture-handler";
+import { Select } from "native-base";
 
 const MyParcels: React.FC<MyParcelsProps> = ({ navigation, route }) => {
-  const dispatch = useAppDispatch();
-  const STATE = useAppSelector((state) => state);
   const [filter, setFilter] = useState<
     | "active"
     | "all"
@@ -56,6 +37,7 @@ const MyParcels: React.FC<MyParcelsProps> = ({ navigation, route }) => {
         <Select.Item label="Confirmed Parcels" value="Awaiting Pickup" />
         <Select.Item label="In Progress" value="Delivery in Progress" />
         <Select.Item label="Completed" value="Delivery Complete" />
+        <Select.Item label="Transaction Compeleted" value="" />
       </Select>
       <Parcels status={filter} />
     </>

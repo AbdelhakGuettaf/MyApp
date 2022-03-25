@@ -32,7 +32,9 @@ export const callNumber = (phone: string) => {
         return Linking.openURL(phoneNumber);
       }
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      throw new Error(err);
+    });
 };
 
 export const getDataStatic = async () => {
@@ -96,12 +98,9 @@ export const addParcelToDB = async (parcel: ParcelType) => {
 
 export const confirmParcel = async (parcel: ParcelType) => {
   const state = store.getState();
-  const { Parcels, UserInfo } = state;
-  const PARCELS_COL = collection(db, "parcels");
-  const DOC_REF = doc(
-    collection(db, "main", "users", UserInfo.uid),
-    "userData"
-  );
+  const { UserInfo } = state;
+  if (UserInfo.admin) return; // admin cannot confirm parcels, only update status of confirmed parcels
+  const DOC_REF = doc(db, "main", "userList", "users", UserInfo.uid);
   const PARCEL_REF = doc(collection(db, "parcels"), parcel.id);
   await updateDoc(DOC_REF, {
     parcels: arrayUnion(parcel.id),

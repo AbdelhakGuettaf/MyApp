@@ -1,9 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export type DispatcherType = {
-  fullName: string;
+  admin: boolean;
+  firstName: string;
+  lastName: string;
+  location: string[];
   parcels: string[];
   phoneNumber: string;
+  id: string;
 };
 
 const initialState: DispatcherType[] = [];
@@ -12,7 +16,8 @@ const DispatcherSlice = createSlice({
   initialState,
   reducers: {
     addDispatcher: (state, action: PayloadAction<DispatcherType>) => {
-      if (state.every((user) => user.fullName !== action.payload.fullName)) {
+      if (state.every((user) => user.id !== action.payload.id)) {
+        if (action.payload.admin) return;
         state.push(action.payload);
       }
     },

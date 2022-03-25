@@ -1,11 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import {
-  doc,
-  setDoc,
-  collection,
-  deleteDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { doc, setDoc, collection, deleteDoc } from "firebase/firestore";
 import { db } from "../../app/firebaseConfig";
 
 export type ParcelType = {
@@ -36,8 +30,6 @@ export const updateStatus = createAsyncThunk(
         newStatus = "Awaiting Pickup";
         newIcon = "hand-holding";
         newColor = "#d97706";
-        await setDoc(doc(db, "parcels", parcel.id), parcel);
-
         await deleteDoc(doc(collection(db, "unConfirmedParcels"), parcel.id));
         break;
       case "Awaiting Pickup":
@@ -51,6 +43,8 @@ export const updateStatus = createAsyncThunk(
         newColor = "#16a34a";
         break;
       case "Delivery Complete":
+        newStatus = "Payed";
+        newIcon = "";
         break;
     }
     let newParcel = {
@@ -60,11 +54,7 @@ export const updateStatus = createAsyncThunk(
       status: newStatus,
     };
     const DOC_REF = doc(db, "parcels", parcel.id);
-    await updateDoc(DOC_REF, {
-      color: newColor,
-      icon: newIcon,
-      status: newStatus,
-    });
+    await setDoc(DOC_REF, newParcel);
 
     return newParcel;
   }
@@ -90,6 +80,15 @@ export const ParcelSlice = createSlice({
         }
       });
     },
+    deleteParcel: (state, action: PayloadAction<string>) => {
+      state.splice(
+        state.findIndex((parcel) => parcel.id === action.payload),
+        1
+      );
+    },
+    reset: (state) => {
+      state = initialState;
+    },
   },
   extraReducers: (buider) => {
     buider.addCase(updateStatus.fulfilled, (state, action) => {
@@ -110,6 +109,7 @@ export const ParcelSlice = createSlice({
   },
 });
 
-export const { addParcel, editParcelStat } = ParcelSlice.actions;
+export const { addParcel, editParcelStat, deleteParcel, reset } =
+  ParcelSlice.actions;
 
 export default ParcelSlice.reducer;

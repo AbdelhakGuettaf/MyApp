@@ -38,28 +38,6 @@ const UsersScreen: React.FC<UsersProps> = ({ navigation, route }) => {
 
   return (
     <>
-      <Select
-        placeholder="Filter Parcels"
-        fontSize={"md"}
-        textAlign="center"
-        color={"gray.500"}
-        borderRadius="md"
-        onValueChange={(text: any) => setFilter(text)}
-        dropdownIcon={
-          <AntDesign
-            name="caretdown"
-            style={{ marginRight: 15 }}
-            size={15}
-            color="gray"
-          />
-        }
-      >
-        <Select.Item label="Active Parcels" value="active" />
-        <Select.Item label="All Parcels" value="all" />
-        <Select.Item label="Confirmed Parcels" value="Awaiting Pickup" />
-        <Select.Item label="In Progress" value="Delivery in Progress" />
-        <Select.Item label="Completed" value="Delivery Complete" />
-      </Select>
       <Dispatchers />
     </>
   );

@@ -59,7 +59,7 @@ type formState = {
   confirmPassword: string;
   password: string;
   phoneNumber: string;
-  location: [""];
+  location: [];
 };
 
 const Register: React.FC<RegisterProps> = ({ navigation, route }) => {
@@ -71,7 +71,7 @@ const Register: React.FC<RegisterProps> = ({ navigation, route }) => {
     lastName: "",
     password: "",
     phoneNumber: "",
-    location: [""],
+    location: [],
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [show, setShow] = useState(false);
@@ -102,20 +102,13 @@ const Register: React.FC<RegisterProps> = ({ navigation, route }) => {
             alert(e.message);
           }
         );
-        const docRef = doc(
-          collection(db, "main", "users", user.uid),
-          "userData"
-        );
-        const parcelsDocRef = doc(
-          collection(db, "main", "users", user.uid),
-          "myParcels"
-        );
-        await setDoc(parcelsDocRef, { parcels: [] });
+        const docRef = doc(db, "main", "userList", "users", user.uid);
         await setDoc(docRef, {
           phoneNumber,
           firstName,
           lastName,
           location,
+          parcels: [],
           admin: false,
         }).catch((e) => {
           setIsSubmitting(false);

@@ -4,7 +4,7 @@ import React from "react";
 import { ScrollView, RefreshControl } from "react-native";
 import { Parcel } from "./Parcel";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { editParcelStat, ParcelType } from "./ParcelsSlice";
+import { editParcelStat, ParcelType, reset } from "./ParcelsSlice";
 
 interface ParcelsProps {
   status:
@@ -13,7 +13,8 @@ interface ParcelsProps {
     | "Awaiting Confirmation"
     | "Awaiting Pickup"
     | "Delivery in Progress"
-    | "Delivery Complete";
+    | "Delivery Complete"
+    | "";
 }
 
 export const Parcels: React.FC<ParcelsProps> = ({ status }) => {
@@ -21,6 +22,7 @@ export const Parcels: React.FC<ParcelsProps> = ({ status }) => {
   const dispatch = useAppDispatch();
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
+    dispatch(reset());
     getDataStatic().then((parcels) =>
       parcels.map((parcel) => dispatch(editParcelStat(parcel)))
     );
@@ -28,7 +30,7 @@ export const Parcels: React.FC<ParcelsProps> = ({ status }) => {
   }, []);
 
   let parcels: ParcelType[] = [];
-  if (status && status !== "all" && status !== "active") {
+  if (status !== "all" && status !== "active") {
     parcels = useAppSelector((state) =>
       state.Parcels.filter((parcel) => parcel.status == status)
     );
@@ -42,20 +44,21 @@ export const Parcels: React.FC<ParcelsProps> = ({ status }) => {
   }
   if (status === "active") {
     parcels = useAppSelector((state) =>
-      state.Parcels.filter((parcel) => parcel.status !== "Delivery Complete")
+      state.Parcels.filter(
+        (parcel) =>
+          parcel.status !== "Delivery Complete" && parcel.status !== ""
+      )
     );
   }
   return (
-    <View flexDirection={"column"} bg="blueGray.100" h="full" pt="1">
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {parcels.map((item, idx) => (
-          <Parcel key={idx} parcel={item} />
-        ))}
-      </ScrollView>
-    </View>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {parcels.map((item, idx) => (
+        <Parcel key={idx} parcel={item} />
+      ))}
+    </ScrollView>
   );
 };

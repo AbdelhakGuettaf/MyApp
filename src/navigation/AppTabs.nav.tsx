@@ -24,6 +24,8 @@ import {
   where,
   onSnapshot,
   getDocs,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../app/firebaseConfig";
 import UsersScreen from "../screens/User.screen";
@@ -43,7 +45,6 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       where("status", "==", "Awaiting Confirmation")
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const parcels: ParcelType[] = [];
       dispatch(reset());
       snapshot.forEach((doc) => {
         dispatch(addUnconParcel(doc.data() as ParcelType));
@@ -84,17 +85,31 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       COLL_REF,
       where("deliveredBy", "==", auth.currentUser?.uid)
     );
-    getData(
-      `/main/users/${auth.currentUser?.uid}`,
-      "userData",
-      "document"
-    ).then((res) => {
-      dispatch(setParcels(res?.parcels));
-      if (res?.admin) {
-        userPerm = true;
-        dispatch(setUserPerm());
-      }
-    });
+    auth.currentUser?.uid
+      ? getData(
+          "/main/userList/users",
+          auth.currentUser.uid.toString(),
+          "document"
+        ).then((res) => {
+          dispatch(setParcels(res?.parcels));
+          if (!res?.id) {
+            const DOC_REF = doc(
+              db,
+              `/main/userList/users/${auth.currentUser?.uid}`
+            );
+            const set = async () => {
+              await updateDoc(DOC_REF, { id: auth.currentUser?.uid });
+            };
+            set().catch((e) => {
+              throw new Error(e);
+            });
+          }
+          if (res?.admin) {
+            userPerm = true;
+            dispatch(setUserPerm());
+          }
+        })
+      : null;
     const qLess = await getDocs(COLL_REF);
     const queued = await getDocs(q);
     if (userPerm) {

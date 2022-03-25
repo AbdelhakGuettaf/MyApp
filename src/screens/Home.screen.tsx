@@ -46,8 +46,8 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   const [toggleForm, setToggleForm] = useState<boolean>(false);
 
   const submitParcel = () => {
-    addParcelToDB(newParcel).then((res) => setToggleForm(false));
-    setNewParcel(initialNewParcelState);
+    setToggleForm(false);
+    addParcelToDB(newParcel).then((res) => setNewParcel(initialNewParcelState));
   };
 
   const toggleModal = () => {
