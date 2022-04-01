@@ -40,7 +40,6 @@ export const callNumber = (phone: string) => {
 export const getDataStatic = async () => {
   const parcels: ParcelType[] = [];
   const auth = getAuth();
-  let userPerm = false;
   const COLL_REF = collection(db, "parcels");
   const q = query(COLL_REF, where("deliveredBy", "==", auth.currentUser?.uid));
   const queued = await getDocs(q).catch((e) => {

@@ -6,9 +6,14 @@ import SettingsScreen from "../screens/Settings.screen";
 import MyParcels from "../screens/myParcels.screen";
 import { AntDesign, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
-import { setUserID, setUserPerm, setParcels } from "../app/user.slice";
+import {
+  setUserID,
+  setUserPerm,
+  setParcels,
+  setUserInfo,
+} from "../app/user.slice";
 import { getAuth } from "firebase/auth";
-import { getData } from "../app/utils";
+import { getData, getUsers } from "../app/utils";
 import {
   addParcel,
   ParcelType,
@@ -26,9 +31,14 @@ import {
   getDocs,
   doc,
   updateDoc,
+  DocumentData,
 } from "firebase/firestore";
 import { db } from "../app/firebaseConfig";
 import UsersScreen from "../screens/User.screen";
+import {
+  addDispatcher,
+  DispatcherType,
+} from "../components/Dispatchers/Dispatchers.slice";
 
 interface AppTabsProps {}
 
@@ -62,6 +72,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
 
   useEffect(() => {
     if (!UserInfo.admin) return;
+    getUsers().then((res) =>
+      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+    );
     const q = query(collection(db, "parcels"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
@@ -91,7 +104,8 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
           auth.currentUser.uid.toString(),
           "document"
         ).then((res) => {
-          dispatch(setParcels(res?.parcels));
+          if (res === undefined) throw new Error("No user document found");
+          dispatch(setParcels(res.parcels));
           if (!res?.id) {
             const DOC_REF = doc(
               db,
@@ -108,6 +122,12 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
             userPerm = true;
             dispatch(setUserPerm());
           }
+          let name = res.firstName + " " + res.lastName;
+          let data: { name: string; phoneNumber: string } = {
+            name: name,
+            phoneNumber: res.phoneNumber,
+          };
+          dispatch(setUserInfo(data));
         })
       : null;
     const qLess = await getDocs(COLL_REF);

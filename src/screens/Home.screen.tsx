@@ -23,6 +23,7 @@ import {
   WarningOutlineIcon,
 } from "native-base";
 import { ScrollView } from "react-native-gesture-handler";
+import { Alert, Pressable } from "react-native";
 
 const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   const dispatch = useAppDispatch();
@@ -46,6 +47,22 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   const [toggleForm, setToggleForm] = useState<boolean>(false);
 
   const submitParcel = () => {
+    if (
+      !newParcel.parcelName ||
+      !newParcel.tracking ||
+      !newParcel.phoneNumber ||
+      !newParcel.destination ||
+      !newParcel.paymentValue
+    )
+      return Alert.alert(
+        "Error",
+        "Please make sure to fill all required fields",
+        [
+          {
+            text: "Ok",
+          },
+        ]
+      );
     setToggleForm(false);
     addParcelToDB(newParcel).then((res) => setNewParcel(initialNewParcelState));
   };
@@ -54,22 +71,33 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
     setToggleForm(!toggleForm);
   };
 
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => {
-        if (UserInfo.admin)
-          return (
-            <Button mr="2" bgColor={"amber.500"} onPress={() => toggleModal()}>
-              Add Parcel
-            </Button>
-          );
-      },
-    });
-  }, [UserInfo]);
-
   return (
     <>
       <Parcels status="Awaiting Confirmation" />
+      {UserInfo.admin && (
+        <Pressable
+          style={{
+            alignSelf: "center",
+            backgroundColor: "rgba(256, 256, 256, 1)",
+
+            padding: 12,
+            borderRadius: 50,
+            marginBottom: 10,
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.23,
+            shadowRadius: 2.62,
+
+            elevation: 4,
+          }}
+          onPress={() => toggleModal()}
+        >
+          <AntDesign name="plus" size={24} color="black" />
+        </Pressable>
+      )}
       <Center>
         <Modal isOpen={toggleForm} onClose={toggleModal} size="xl">
           <Modal.Content>

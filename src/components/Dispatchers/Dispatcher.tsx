@@ -1,24 +1,14 @@
 import React, { useState } from "react";
 import { DispatcherType } from "./Dispatchers.slice";
+import { MaterialIcons, Octicons } from "@expo/vector-icons";
 import {
-  FontAwesome5,
-  MaterialCommunityIcons,
-  MaterialIcons,
-  Octicons,
-} from "@expo/vector-icons";
-import {
-  Center,
   Heading,
   HStack,
-  Spinner,
   Text,
   View,
-  VStack,
   Modal,
-  ScrollView,
   Button,
   Pressable,
-  Divider,
 } from "native-base";
 import { callNumber } from "../../app/utils";
 import { useAppSelector } from "../../app/hooks";

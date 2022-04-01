@@ -43,7 +43,7 @@ export const Parcel: React.FC<ParcelProps> = ({
     status,
     tracking,
     icon,
-    color,
+    color: checkColor,
   },
 }) => {
   const dispatch = useAppDispatch();
@@ -129,6 +129,12 @@ export const Parcel: React.FC<ParcelProps> = ({
       ]
     );
   };
+  let color;
+  if (checkColor === "") {
+    color = "white";
+  } else {
+    color = checkColor;
+  }
   return (
     <>
       <Pressable onPress={() => toggleModal()}>

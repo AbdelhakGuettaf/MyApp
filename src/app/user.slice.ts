@@ -4,12 +4,16 @@ const initialState: userData = {
   parcels: [],
   admin: false,
   uid: "",
+  phoneNumber: "",
+  name: "",
 };
 
 type userData = {
   parcels: string[];
   admin: boolean;
   uid: string;
+  phoneNumber: string;
+  name: string;
 };
 
 export const userInfo = createSlice({
@@ -28,10 +32,22 @@ export const userInfo = createSlice({
     updateParcels: (state, action: PayloadAction<string>) => {
       state.parcels.push(action.payload);
     },
+    setUserInfo: (
+      state,
+      action: PayloadAction<{ name: string; phoneNumber: string }>
+    ) => {
+      state.name = action.payload.name;
+      state.phoneNumber = action.payload.phoneNumber;
+    },
   },
 });
 
-export const { setUserPerm, setUserID, setParcels, updateParcels } =
-  userInfo.actions;
+export const {
+  setUserPerm,
+  setUserID,
+  setParcels,
+  updateParcels,
+  setUserInfo,
+} = userInfo.actions;
 
 export default userInfo.reducer;
