@@ -29,6 +29,7 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   const dispatch = useAppDispatch();
   const STATE = useAppSelector((state) => state);
   const { UserInfo } = STATE;
+  const TYPE = UserInfo.type === "Store Account" ? true : false;
   const initialNewParcelState: ParcelType = {
     id: "",
     deliveredBy: "",
@@ -36,11 +37,16 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
     description: "",
     destination: "",
     paymentValue: "",
-    createdAt: "",
+    createdAt: new Date().toLocaleDateString("ar-ar", {
+      weekday: "long",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }),
     phoneNumber: "",
-    status: "",
+    status: "Awaiting Confirmation",
     tracking: "",
-    icon: "",
+    icon: "exclamation",
     color: "",
   };
   const [newParcel, setNewParcel] = useState<ParcelType>(initialNewParcelState);
@@ -53,7 +59,7 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
       !newParcel.phoneNumber ||
       !newParcel.destination ||
       !newParcel.paymentValue
-    )
+    ) {
       return Alert.alert(
         "Error",
         "Please make sure to fill all required fields",
@@ -63,18 +69,32 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
           },
         ]
       );
+    }
     setToggleForm(false);
-    addParcelToDB(newParcel).then((res) => setNewParcel(initialNewParcelState));
+    addParcelToDB(newParcel)
+      .then((res) => setNewParcel(initialNewParcelState))
+      .catch((e) => {
+        throw new Error(e);
+      });
   };
 
   const toggleModal = () => {
+    if (TYPE) {
+      setNewParcel({
+        ...newParcel,
+        tracking: "0",
+        local: true,
+        storeAddress: UserInfo.storeAddress,
+        storeName: UserInfo.store,
+        storePhoneNumber: UserInfo.phoneNumber,
+      });
+    }
     setToggleForm(!toggleForm);
   };
 
-  return (
-    <>
-      <Parcels status="Awaiting Confirmation" />
-      {UserInfo.admin && (
+  const RenderButton = () => {
+    if (UserInfo.admin || TYPE) {
+      return (
         <Pressable
           style={{
             alignSelf: "center",
@@ -97,13 +117,20 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
         >
           <AntDesign name="plus" size={24} color="black" />
         </Pressable>
-      )}
+      );
+    }
+    return <></>;
+  };
+  return (
+    <>
+      <Parcels status="Awaiting Confirmation" />
+      <RenderButton />
       <Center>
         <Modal isOpen={toggleForm} onClose={toggleModal} size="xl">
           <Modal.Content>
             <Modal.CloseButton />
             <Modal.Header>
-              <Heading>Create new Parcel</Heading>
+              <Heading>Create new {TYPE ? "store" : null} parcel</Heading>
             </Modal.Header>
             <Modal.Body>
               <ScrollView>
@@ -165,22 +192,24 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
                     <InputRightAddon bg="gray.200" children={"DA"} />
                   </HStack>
                 </FormControl>
-                <FormControl mt="3" isRequired>
-                  <HStack>
-                    <FormControl.Label alignItems={"center"} w="1/4">
-                      <Text>Tracking n°</Text>
-                    </FormControl.Label>
-                    <Input
-                      value={newParcel.tracking}
-                      onChangeText={(text) =>
-                        setNewParcel({ ...newParcel, tracking: text })
-                      }
-                      keyboardType="number-pad"
-                      flexGrow={"1"}
-                      placeholder="Tracking number"
-                    />
-                  </HStack>
-                </FormControl>
+                {!TYPE && (
+                  <FormControl mt="3" isRequired>
+                    <HStack>
+                      <FormControl.Label alignItems={"center"} w="1/4">
+                        <Text>Tracking n°</Text>
+                      </FormControl.Label>
+                      <Input
+                        value={newParcel.tracking}
+                        onChangeText={(text) =>
+                          setNewParcel({ ...newParcel, tracking: text })
+                        }
+                        keyboardType="number-pad"
+                        flexGrow={"1"}
+                        placeholder="Tracking number"
+                      />
+                    </HStack>
+                  </FormControl>
+                )}
                 <FormControl mt="3" isRequired>
                   <HStack>
                     <FormControl.Label alignItems={"center"} w="1/4">

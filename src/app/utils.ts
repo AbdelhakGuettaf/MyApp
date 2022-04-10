@@ -9,13 +9,15 @@ import {
   where,
   addDoc,
   getDoc,
+  deleteDoc,
   arrayUnion,
   DocumentData,
   QueryDocumentSnapshot,
 } from "@firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { store } from "../store/store";
-import { ParcelType } from "../components/Parcels/ParcelsSlice";
+import { deleteParcel, ParcelType } from "../components/Parcels/ParcelsSlice";
+import { useAppDispatch } from "./hooks";
 
 export const callNumber = (phone: string) => {
   let phoneNumber: string;
@@ -41,11 +43,16 @@ export const getDataStatic = async () => {
   const parcels: ParcelType[] = [];
   const auth = getAuth();
   const COLL_REF = collection(db, "parcels");
+  const COLL_REF_UN = collection(db, "unConfirmedParcels");
   const q = query(COLL_REF, where("deliveredBy", "==", auth.currentUser?.uid));
   const queued = await getDocs(q).catch((e) => {
     throw new Error(e);
   });
+  const queuedUn = await getDocs(COLL_REF_UN).catch((e) => {
+    throw new Error(e);
+  });
   queued.forEach((doc) => parcels.push(doc.data() as ParcelType));
+  queuedUn.forEach((doc) => parcels.push(doc.data() as ParcelType));
   return parcels;
 };
 
@@ -98,7 +105,6 @@ export const addParcelToDB = async (parcel: ParcelType) => {
 export const confirmParcel = async (parcel: ParcelType) => {
   const state = store.getState();
   const { UserInfo } = state;
-  if (UserInfo.admin) return; // admin cannot confirm parcels, only update status of confirmed parcels
   const DOC_REF = doc(db, "main", "userList", "users", UserInfo.uid);
   const PARCEL_REF = doc(collection(db, "parcels"), parcel.id);
   await updateDoc(DOC_REF, {
@@ -117,3 +123,15 @@ export const getUsers = async () => {
   });
   return data;
 };
+
+export async function deleteParcelFromDB(parcel: ParcelType) {
+  if (parcel.status === "Awaiting Confirmation") {
+    await deleteDoc(doc(db, "unConfirmedParcels", parcel.id)).catch((e) => {
+      alert(e);
+    });
+    return;
+  }
+  await deleteDoc(doc(db, "parcels", parcel.id)).catch((e) => {
+    alert(e);
+  });
+}

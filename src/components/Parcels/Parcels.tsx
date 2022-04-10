@@ -4,7 +4,8 @@ import React from "react";
 import { ScrollView, RefreshControl } from "react-native";
 import { Parcel } from "./Parcel";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { editParcelStat, ParcelType, reset } from "./ParcelsSlice";
+import { addParcel, editParcelStat, ParcelType, reset } from "./ParcelsSlice";
+import { addUnconParcel } from "./UnconfirmedParcels.slice";
 
 interface ParcelsProps {
   status:
@@ -20,12 +21,18 @@ interface ParcelsProps {
 export const Parcels: React.FC<ParcelsProps> = ({ status }) => {
   const [refreshing, setRefreshing] = React.useState(false);
   const dispatch = useAppDispatch();
+  const { UserInfo } = useAppSelector((state) => state);
   const onRefresh = React.useCallback(() => {
+    if (UserInfo.admin || UserInfo.type === "Store Account") return;
     setRefreshing(true);
     dispatch(reset());
-    getDataStatic().then((parcels) =>
-      parcels.map((parcel) => dispatch(editParcelStat(parcel)))
-    );
+    getDataStatic().then((parcel) => {
+      parcel.map((parcel) => {
+        parcel.status === "Awaiting Confirmation"
+          ? dispatch(addUnconParcel(parcel))
+          : dispatch(addParcel(parcel));
+      });
+    });
     setRefreshing(false);
   }, []);
 
@@ -53,7 +60,11 @@ export const Parcels: React.FC<ParcelsProps> = ({ status }) => {
   return (
     <ScrollView
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        status === "Awaiting Confirmation" ? (
+          <></>
+        ) : (
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        )
       }
     >
       {parcels.map((item, idx) => (

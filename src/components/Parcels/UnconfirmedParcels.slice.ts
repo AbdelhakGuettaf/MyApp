@@ -10,8 +10,7 @@ export const UnconfirmedParcelSlice = createSlice({
     addUnconParcel: (state, action: PayloadAction<ParcelType>) => {
       let checker = true;
       state.map((parcel) => {
-        if (parcel.tracking === action.payload.tracking)
-          return (checker = false);
+        if (parcel.id === action.payload.id) return (checker = false);
       });
       if (checker) state.push(action.payload);
     },

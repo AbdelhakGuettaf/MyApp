@@ -90,6 +90,29 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       unsubscribe();
     };
   }, [UserInfo.admin]);
+  useEffect(() => {
+    if (UserInfo.type !== "Store Account") return;
+    getUsers().then((res) =>
+      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+    );
+    const q = query(
+      collection(db, "parcels"),
+      where("storeName", "==", UserInfo.store)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          dispatch(addParcel(change.doc.data() as ParcelType));
+        }
+        if (change.type === "modified") {
+          dispatch(editParcelStat(change.doc.data() as ParcelType));
+        }
+      });
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [UserInfo.store]);
 
   const data = async () => {
     let userPerm = false;
@@ -123,10 +146,16 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
             dispatch(setUserPerm());
           }
           let name = res.firstName + " " + res.lastName;
-          let data: { name: string; phoneNumber: string } = {
+          let data = {
+            type: res.accountType,
             name: name,
             phoneNumber: res.phoneNumber,
+            store: "",
+            storeAddress: "",
           };
+          if (res.accountType === "Store Account") {
+            data = { ...data, store: res.store, storeAddress: res.address };
+          }
           dispatch(setUserInfo(data));
         })
       : null;
@@ -212,34 +241,56 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
             name={UserInfo.admin ? "Home" : "New"}
             component={Home}
             options={{
-              headerTitle: UserInfo.admin ? "Admin Acount" : "Delivery Account",
-              headerLeft: () => (
-                <AntDesign
-                  style={{ marginLeft: 8 }}
-                  name="user"
-                  size={24}
-                  color="white"
-                />
-              ),
+              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+              headerLeft: () =>
+                UserInfo.type === "Store Account" ? (
+                  <FontAwesome5
+                    style={{ marginLeft: 8 }}
+                    name="store-alt"
+                    size={24}
+                    color="white"
+                  />
+                ) : (
+                  <AntDesign
+                    style={{ marginLeft: 8 }}
+                    name="user"
+                    size={24}
+                    color="white"
+                  />
+                ),
               headerStyle: { backgroundColor: "tomato" },
               headerTintColor: "white",
             }}
           />
 
-          {UserInfo.admin ? (
-            <Tab.Screen
-              name="All Parcels"
-              component={MyParcels}
-              options={{
-                tabBarIcon: ({ focused }) => (
+          <Tab.Screen
+            name={UserInfo.admin ? "All Parcels" : "My Parcels"}
+            component={MyParcels}
+            options={{
+              tabBarIcon: ({ focused }) =>
+                UserInfo.admin ? (
                   <FontAwesome5
                     name="boxes"
                     size={24}
                     color={focused ? "tomato" : "gray"}
                   />
+                ) : (
+                  <Ionicons
+                    name={"cube"}
+                    size={24}
+                    color={focused ? "tomato" : "gray"}
+                  />
                 ),
-                headerTitle: "Admin Acount",
-                headerLeft: () => (
+              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+              headerLeft: () =>
+                UserInfo.type === "Store Account" ? (
+                  <FontAwesome5
+                    style={{ marginLeft: 8 }}
+                    name="store-alt"
+                    size={24}
+                    color="white"
+                  />
+                ) : (
                   <AntDesign
                     style={{ marginLeft: 8 }}
                     name="user"
@@ -247,37 +298,52 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                     color="white"
                   />
                 ),
-                headerStyle: { backgroundColor: "tomato" },
-                headerTintColor: "white",
-              }}
-            />
-          ) : (
-            <Tab.Screen
-              name="My Parcels"
-              component={MyParcels}
-              options={{
-                headerTitle: "Delivery Account",
-                headerLeft: () => (
-                  <AntDesign
-                    style={{ marginLeft: 8 }}
-                    name="user"
-                    size={24}
-                    color="white"
-                  />
-                ),
-                headerStyle: { backgroundColor: "tomato" },
-                headerTintColor: "white",
-              }}
-            />
-          )}
+              headerStyle: { backgroundColor: "tomato" },
+              headerTintColor: "white",
+            }}
+          />
 
-          {UserInfo.admin ? (
+          {UserInfo.admin && (
             <Tab.Screen
               name="Users"
               component={UsersScreen}
               options={{
                 headerTitle: "Users",
-                headerLeft: () => (
+                headerLeft: () =>
+                  UserInfo.type === "Store Account" ? (
+                    <FontAwesome5
+                      style={{ marginLeft: 8 }}
+                      name="store-alt"
+                      size={24}
+                      color="white"
+                    />
+                  ) : (
+                    <AntDesign
+                      style={{ marginLeft: 8 }}
+                      name="user"
+                      size={24}
+                      color="white"
+                    />
+                  ),
+                headerStyle: { backgroundColor: "tomato" },
+                headerTintColor: "white",
+              }}
+            />
+          )}
+          <Tab.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{
+              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+              headerLeft: () =>
+                UserInfo.type === "Store Account" ? (
+                  <FontAwesome5
+                    style={{ marginLeft: 8 }}
+                    name="store-alt"
+                    size={24}
+                    color="white"
+                  />
+                ) : (
                   <AntDesign
                     style={{ marginLeft: 8 }}
                     name="user"
@@ -285,24 +351,6 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                     color="white"
                   />
                 ),
-                headerStyle: { backgroundColor: "tomato" },
-                headerTintColor: "white",
-              }}
-            />
-          ) : null}
-          <Tab.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{
-              headerTitle: UserInfo.admin ? "Admin Acount" : "Delivery Account",
-              headerLeft: () => (
-                <AntDesign
-                  style={{ marginLeft: 8 }}
-                  name="user"
-                  size={24}
-                  color="white"
-                />
-              ),
               headerStyle: { backgroundColor: "tomato" },
               headerTintColor: "white",
             }}

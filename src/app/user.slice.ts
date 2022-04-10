@@ -6,11 +6,15 @@ const initialState: userData = {
   uid: "",
   phoneNumber: "",
   name: "",
+  type: "",
 };
 
 type userData = {
   parcels: string[];
   admin: boolean;
+  type: string;
+  store?: string;
+  storeAddress?: string;
   uid: string;
   phoneNumber: string;
   name: string;
@@ -34,8 +38,17 @@ export const userInfo = createSlice({
     },
     setUserInfo: (
       state,
-      action: PayloadAction<{ name: string; phoneNumber: string }>
+      action: PayloadAction<{
+        name: string;
+        phoneNumber: string;
+        type: string;
+        store: string;
+        storeAddress: string;
+      }>
     ) => {
+      state.type = action.payload.type;
+      state.store = action.payload.store;
+      state.storeAddress = action.payload.storeAddress;
       state.name = action.payload.name;
       state.phoneNumber = action.payload.phoneNumber;
     },

@@ -15,6 +15,10 @@ export type ParcelType = {
   icon: string;
   color: string;
   deliveredBy: string;
+  local?: boolean;
+  storeAddress?: string;
+  storeName?: string;
+  storePhoneNumber?: string;
 };
 
 const initialState: ParcelType[] = [];
@@ -87,7 +91,7 @@ export const ParcelSlice = createSlice({
       );
     },
     reset: (state) => {
-      state = initialState;
+      return (state = []);
     },
   },
   extraReducers: (buider) => {

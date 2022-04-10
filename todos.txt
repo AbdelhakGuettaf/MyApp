@@ -1,0 +1,20 @@
+Add new store account type : {
+    > this account can create parcels headed to the local office where dispatchers can then pick them up
+    > the parcel this store creates has three properties {storeName:string,storeAddress:string,local:boolean}, which are not required in the parcelType
+    > the account holder is similar to admin account but only scoped to his type of parcels
+        > can see all local parcels that share his store name, this allows several store to share name but not storeAddress
+        > can delete parcels that are unconfirmed or haven't been picked up yet ("Awaiting Confirmation" || "Awaiting Pickup")
+        > can not update parel status or delete them after they have been picked up
+        > can see who's delivering the object but do not have access to their data
+    > this account may later be allowed to create local dispatcher accounts
+} **Completed
+
+Native base selector causes lags and must be replaced 
+
+Admin should be able to unconfirm a parcel if a dispatcher takes too long to pick up the parcel: {
+    >  This can be set to a default time ~ 24H or 
+       add an option for dispatcher to provide an estimate time for arrival aswell as a cancel button
+}
+
+Add notifications for new parcels
+

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FontAwesome5,
   MaterialCommunityIcons,
@@ -20,12 +20,13 @@ import {
   Divider,
 } from "native-base";
 import { ParcelType, deleteParcel } from "./ParcelsSlice";
-import { callNumber, confirmParcel } from "../../app/utils";
+import { callNumber, confirmParcel, deleteParcelFromDB } from "../../app/utils";
 import { updateStatus } from "./ParcelsSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { Alert } from "react-native";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "../../app/firebaseConfig";
+import { userInfo } from "../../app/user.slice";
 
 interface ParcelProps {
   parcel: ParcelType;
@@ -44,10 +45,14 @@ export const Parcel: React.FC<ParcelProps> = ({
     tracking,
     icon,
     color: checkColor,
+    local,
+    storeAddress,
+    storePhoneNumber,
+    storeName,
   },
 }) => {
   const dispatch = useAppDispatch();
-  const { admin } = useAppSelector((state) => state.UserInfo);
+  const UserInfo = useAppSelector((state) => state.UserInfo);
   const Dispatchers = useAppSelector((state) => state.Dispatchers);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const toggleModal = () => {
@@ -62,6 +67,8 @@ export const Parcel: React.FC<ParcelProps> = ({
       case "Delivery in Progress":
         return "yellow.400";
       case "Delivery Complete":
+        return "success.600";
+      case "Payed":
         return "success.600";
     }
   };
@@ -78,7 +85,7 @@ export const Parcel: React.FC<ParcelProps> = ({
         result = "Delivered!";
         break;
       case "Delivery Complete":
-        if (admin) {
+        if (UserInfo.admin) {
           return (result = "Recieved Payment!");
         }
         result = "Ok";
@@ -96,29 +103,10 @@ export const Parcel: React.FC<ParcelProps> = ({
         // The "Yes" button
         {
           text: "Yes",
-          onPress: async () => {
-            if (parcel.status === "Awaiting Confirmation") {
-              await deleteDoc(doc(db, "unConfirmedParcels", parcel.id))
-                .then(
-                  () => (
-                    dispatch(deleteParcel(parcel.id)), setModalVisible(false)
-                  )
-                )
-                .catch((e) => {
-                  throw new Error(e);
-                });
-              setModalVisible(false);
-              return;
-            }
-            await deleteDoc(doc(db, "parcels", parcel.id))
-              .then(
-                () => (
-                  dispatch(deleteParcel(parcel.id)), setModalVisible(false)
-                )
-              )
-              .catch((e) => {
-                throw new Error(e);
-              });
+          onPress: () => {
+            deleteParcelFromDB(parcel);
+            setModalVisible(false);
+            dispatch(deleteParcel(parcel.id));
           },
         },
         // The "No" button
@@ -135,6 +123,36 @@ export const Parcel: React.FC<ParcelProps> = ({
   } else {
     color = checkColor;
   }
+  const DeleteButton = () => {
+    if (UserInfo.admin) {
+      return (
+        <Button
+          p="1"
+          bgColor={"warning.700"}
+          onPress={() => {
+            showConfirmDialog();
+          }}
+        >
+          Delete
+        </Button>
+      );
+    }
+    if (UserInfo.type === "Store Account" && local) {
+      if (status === "Awaiting Confirmation" || status === "Awaiting Pickup")
+        return (
+          <Button
+            p="1"
+            bgColor={"warning.700"}
+            onPress={() => {
+              showConfirmDialog();
+            }}
+          >
+            Delete
+          </Button>
+        );
+    }
+    return <></>;
+  };
   return (
     <>
       <Pressable onPress={() => toggleModal()}>
@@ -148,42 +166,60 @@ export const Parcel: React.FC<ParcelProps> = ({
         >
           <HStack width={"full"} overflow="hidden">
             <View marginY="auto" maxW={"1/5"}>
-              <Octicons name="package" size={55} color="tomato" />
+              {local ? (
+                <FontAwesome5 name="store" size={40} color="tomato" />
+              ) : (
+                <Octicons name="package" size={55} color="tomato" />
+              )}
             </View>
 
             <VStack marginLeft="2" flexGrow={1} maxW={"3/5"}>
               <HStack>
                 <Heading fontSize="md" isTruncated>
-                  {parcelName}
+                  {local ? storeName : parcelName}
                 </Heading>
               </HStack>
-              <Text fontSize="xs" color="gray.500">
-                To : {destination}
-              </Text>
-              <HStack>
-                <Text fontSize="xs" color="gray.500">
-                  Date: {createdAt}
-                </Text>
-                <Text
-                  bg="tomato"
-                  borderRadius="sm"
-                  paddingX="0.5"
-                  color="white"
-                  fontSize="xs"
-                  marginLeft="1"
-                >
-                  {paymentValue} DA
-                </Text>
-              </HStack>
-
-              <Text fontSize="xs" color="gray.500">
-                {tracking}
-              </Text>
+              {local ? (
+                <VStack>
+                  <Text fontSize="xs" color="gray.500">
+                    Address : {storeAddress}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    To : {parcelName}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Date: {createdAt}
+                  </Text>
+                </VStack>
+              ) : (
+                <VStack>
+                  <Text fontSize="xs" color="gray.500">
+                    To : {destination}
+                  </Text>
+                  <HStack>
+                    <Text fontSize="xs" color="gray.500">
+                      Date: {createdAt}
+                    </Text>
+                    <Text
+                      bg="tomato"
+                      borderRadius="sm"
+                      paddingX="0.5"
+                      color="white"
+                      fontSize="xs"
+                      marginLeft="1"
+                    >
+                      {paymentValue} DA
+                    </Text>
+                  </HStack>
+                  <Text fontSize="xs" color="gray.500">
+                    {tracking}
+                  </Text>
+                </VStack>
+              )}
             </VStack>
             <View m="auto" flexGrow={0}>
               <View alignItems={"center"}>
                 <FontAwesome5 name={icon} size={30} color={color} />
-
                 <Text
                   marginTop={"3"}
                   fontWeight={"bold"}
@@ -202,11 +238,26 @@ export const Parcel: React.FC<ParcelProps> = ({
         <Modal.Content maxH="360">
           <Modal.CloseButton />
           <Modal.Header>
-            <Text isTruncated maxW={"4/5"}>
-              Recepient Name: {parcelName}
-            </Text>
-            <Divider my="1" />
-            <Text>Destination: {destination}</Text>
+            {local ? (
+              <>
+                <Text isTruncated maxW={"4/5"}>
+                  Store: {storeName}
+                </Text>
+                <Divider my="1" />
+                <Text isTruncated maxW={"4/5"}>
+                  Address: {storeAddress}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text isTruncated maxW={"4/5"}>
+                  Recepient Name: {parcelName}
+                </Text>
+                <Divider my="1" />
+                <Text>Destination: {destination}</Text>
+              </>
+            )}
+
             <Divider my="1" />
             <Text>Date: {createdAt}</Text>
             <Divider my="1" />
@@ -248,43 +299,61 @@ export const Parcel: React.FC<ParcelProps> = ({
               >
                 Cancel
               </Button>
-              <Button
-                p="1"
-                leftIcon={<MaterialIcons name="call" size={20} color="black" />}
-                bgColor={"green.600"}
-                onPress={() => {
-                  callNumber(phoneNumber);
-                }}
-              >
-                {phoneNumber}
-              </Button>
-              {admin ? (
+              {local ? (
                 <Button
                   p="1"
-                  bgColor={"warning.700"}
+                  leftIcon={
+                    local ? (
+                      <FontAwesome5 name="store" size={20} color="white" />
+                    ) : (
+                      <MaterialIcons name="call" size={20} color="black" />
+                    )
+                  }
+                  bgColor={"green.600"}
                   onPress={() => {
-                    showConfirmDialog();
+                    storePhoneNumber && callNumber(storePhoneNumber);
                   }}
                 >
-                  Delete
+                  {storePhoneNumber}
                 </Button>
               ) : (
-                <></>
+                <Button
+                  p="1"
+                  leftIcon={
+                    <MaterialIcons name="call" size={20} color="black" />
+                  }
+                  bgColor={"green.600"}
+                  onPress={() => {
+                    callNumber(phoneNumber);
+                  }}
+                >
+                  {phoneNumber}
+                </Button>
               )}
+              {<DeleteButton />}
               <Button
                 p="1.5"
                 bgColor={"tomato"}
                 onPress={() => {
                   setModalVisible(false);
-                  if (parcel.status === "Awaiting Confirmation" && admin)
-                    // admins cannot accept deliveries
+                  if (UserInfo.type === "Store Account") return; //Store accounts cannot update status
+                  if (
+                    parcel.status === "Awaiting Confirmation" &&
+                    UserInfo.admin
+                  )
+                    // admin cannot accept deliveries
                     return;
-                  if (parcel.status === "Delivery Complete" && !admin) {
-                    // if delivery is compelete only an admin can call updateStatus() thunk
+
+                  if (
+                    parcel.status === "Delivery Complete" &&
+                    !UserInfo.admin
+                  ) {
+                    // if delivery is compelete only an admin can update status
                     setModalVisible(false);
                     return;
                   }
-                  dispatch(updateStatus(parcel)); //Thunk
+
+                  dispatch(updateStatus(parcel)); //Thunkfunction that updates the parcel to the next status
                   if (parcel.status === "Awaiting Confirmation") {
                     confirmParcel(parcel); //This function adds the parcel id to the parcels array in the userData
                   }

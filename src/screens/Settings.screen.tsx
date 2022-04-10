@@ -63,7 +63,7 @@ const SettingsScreen: React.FC<SettingsProps> = ({ navigation, route }) => {
           <Divider />
           <HStack bgColor={"white"} rounded="none" p="2">
             <Text fontWeight={"bold"}>Account Type: </Text>
-            <Text>{state.UserInfo.admin ? " Admin" : " Delivery"}</Text>
+            <Text>{state.UserInfo.admin ? " Admin" : state.UserInfo.type}</Text>
           </HStack>
           <Divider />
           <HStack bgColor={"white"} rounded="none" p="2">
