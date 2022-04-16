@@ -14,10 +14,10 @@ export const UnconfirmedParcelSlice = createSlice({
       });
       if (checker) state.push(action.payload);
     },
-    reset: () => initialState,
+    resetUncon: (state) => (state = initialState),
   },
 });
 
-export const { addUnconParcel, reset } = UnconfirmedParcelSlice.actions;
+export const { addUnconParcel, resetUncon } = UnconfirmedParcelSlice.actions;
 
 export default UnconfirmedParcelSlice.reducer;

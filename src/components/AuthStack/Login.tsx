@@ -1,12 +1,9 @@
 import React, { useState } from "react";
 import {
   Center,
-  NativeBaseProvider,
   Input,
   HStack,
   VStack,
-  NumberInputField,
-  Divider,
   FormControl,
   Box,
   Link,
@@ -14,7 +11,8 @@ import {
   Button,
   Heading,
   Icon,
-  View,
+  Modal,
+  Spinner,
 } from "native-base";
 import { LoginProps } from "./AuthStackParamList";
 import { SafeAreaView } from "react-native";
@@ -33,11 +31,13 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
   const handleClick = () => setShow(!show);
   const [error, setError] = useState<error>({});
   const auth = getAuth();
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const login = async () => {
-    await signInWithEmailAndPassword(auth, loginEmail, password).catch(
-      (error) => alert(error.message)
-    );
+    setIsSubmitting(true);
+    await signInWithEmailAndPassword(auth, loginEmail, password)
+      .catch((error) => alert(error.message))
+      .finally(() => setIsSubmitting(false));
   };
   return (
     <Center w="100%">
@@ -106,7 +106,7 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
                     }
                     size={5}
                     mr="2"
-                    color={show ? "primary.500" : "muted.400"}
+                    color={show ? "tomato" : "muted.400"}
                     onPress={handleClick}
                   />
                 }
@@ -119,7 +119,7 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
               _text={{
                 fontSize: "xs",
                 fontWeight: "500",
-                color: "primary.500",
+                color: "tomato",
               }}
               alignSelf="flex-end"
               mt="1"
@@ -132,7 +132,7 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
               </FormControl.ErrorMessage>
             ) : null}
           </FormControl>
-          <Button mt="2" colorScheme="primary" onPress={() => login()}>
+          <Button mt="2" bgColor={"tomato"} onPress={() => login()}>
             Sign in
           </Button>
           <HStack mt="6" justifyContent="center">
@@ -147,7 +147,7 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
             </Text>
             <Link
               _text={{
-                color: "primary.500",
+                color: "tomato",
                 fontWeight: "medium",
                 fontSize: "sm",
               }}
@@ -158,6 +158,14 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
           </HStack>
         </VStack>
       </Box>
+      <Modal isOpen={isSubmitting}>
+        <Modal.Content maxH="212">
+          <Modal.Header>Signing in...</Modal.Header>
+          <Modal.Body>
+            <Spinner size={"lg"} />
+          </Modal.Body>
+        </Modal.Content>
+      </Modal>
     </Center>
   );
 };

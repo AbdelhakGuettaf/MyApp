@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 import { SettingsProps } from "./ScreenProps";
 import { getAuth } from "firebase/auth";
 import {
+  View,
   Button,
   Divider,
   Heading,
@@ -14,7 +15,6 @@ import {
 import Register from "../components/AuthStack/Register";
 import { useAppSelector } from "../app/hooks";
 import { AntDesign } from "@expo/vector-icons";
-import { View } from "native-base";
 
 const SettingsScreen: React.FC<SettingsProps> = ({ navigation, route }) => {
   const auth = getAuth();

@@ -16,8 +16,7 @@ import {
 } from "@firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { store } from "../store/store";
-import { deleteParcel, ParcelType } from "../components/Parcels/ParcelsSlice";
-import { useAppDispatch } from "./hooks";
+import { ParcelType } from "../components/Parcels/ParcelsSlice";
 
 export const callNumber = (phone: string) => {
   let phoneNumber: string;

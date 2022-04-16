@@ -38,7 +38,8 @@
     "redux-native": "^1.0.0",
     "redux-thunk": "^2.4.1",
     "expo-updates": "~0.11.6",
-    "@react-native-picker/picker": "2.2.1"
+    "@react-native-picker/picker": "2.2.1",
+    "expo-permissions": "~13.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",

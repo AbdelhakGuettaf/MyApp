@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   FontAwesome5,
-  MaterialCommunityIcons,
   MaterialIcons,
   Octicons,
+  AntDesign,
 } from "@expo/vector-icons";
 import {
-  Center,
   Heading,
   HStack,
-  Spinner,
   Text,
   View,
   VStack,
@@ -18,15 +16,14 @@ import {
   Button,
   Pressable,
   Divider,
+  Spinner,
 } from "native-base";
 import { ParcelType, deleteParcel } from "./ParcelsSlice";
 import { callNumber, confirmParcel, deleteParcelFromDB } from "../../app/utils";
 import { updateStatus } from "./ParcelsSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { Alert } from "react-native";
-import { deleteDoc, doc } from "firebase/firestore";
-import { db } from "../../app/firebaseConfig";
-import { userInfo } from "../../app/user.slice";
+import { Alert, Animated, Vibration } from "react-native";
+import { ParcelForm } from "../CreateParcelForm/parcelForm";
 
 interface ParcelProps {
   parcel: ParcelType;
@@ -55,6 +52,51 @@ export const Parcel: React.FC<ParcelProps> = ({
   const UserInfo = useAppSelector((state) => state.UserInfo);
   const Dispatchers = useAppSelector((state) => state.Dispatchers);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [toggle, setToggle] = useState<boolean>(false);
+  const [toggleAddParcelForm, setToggleAddParcelForm] =
+    useState<boolean>(false);
+  const anim = {
+    left: useRef(new Animated.Value(0)).current,
+    opacity: useRef(new Animated.Value(0)).current,
+  };
+  const interpolatedLeft = anim.left.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 1.2, 1.8],
+  });
+  const showSideButtons = () => {
+    if (UserInfo.type === "Delivery Account") return;
+    if (!local && UserInfo.type === "Store Account") return;
+    const { left, opacity } = anim;
+    Animated.timing(left, {
+      toValue: 30,
+      duration: 150,
+      useNativeDriver: false,
+    }).start(() => {
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 50,
+        useNativeDriver: false,
+      }).start();
+    });
+    setToggle(!toggle);
+  };
+  const hideSideButtons = () => {
+    const { left, opacity } = anim;
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 15,
+      useNativeDriver: false,
+    }).start(() => {
+      Animated.timing(left, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: false,
+      }).start();
+    });
+    setToggle(!toggle);
+  };
+
   const toggleModal = () => {
     setModalVisible(!modalVisible);
   };
@@ -104,7 +146,8 @@ export const Parcel: React.FC<ParcelProps> = ({
         {
           text: "Yes",
           onPress: () => {
-            deleteParcelFromDB(parcel);
+            setIsSubmitting(true);
+            deleteParcelFromDB(parcel).then(() => setIsSubmitting(false));
             setModalVisible(false);
             dispatch(deleteParcel(parcel.id));
           },
@@ -123,115 +166,137 @@ export const Parcel: React.FC<ParcelProps> = ({
   } else {
     color = checkColor;
   }
-  const DeleteButton = () => {
+  const deleteThisParcel = () => {
     if (UserInfo.admin) {
-      return (
-        <Button
-          p="1"
-          bgColor={"warning.700"}
-          onPress={() => {
-            showConfirmDialog();
-          }}
-        >
-          Delete
-        </Button>
-      );
+      showConfirmDialog();
     }
     if (UserInfo.type === "Store Account" && local) {
       if (status === "Awaiting Confirmation" || status === "Awaiting Pickup")
-        return (
-          <Button
-            p="1"
-            bgColor={"warning.700"}
-            onPress={() => {
-              showConfirmDialog();
-            }}
-          >
-            Delete
-          </Button>
-        );
+        showConfirmDialog();
+    }
+  };
+  const ConvertButton = () => {
+    if (local && UserInfo.admin) {
+      return (
+        <Button onPress={() => setToggleAddParcelForm(true)}>Convert</Button>
+      );
     }
     return <></>;
   };
   return (
     <>
-      <Pressable onPress={() => toggleModal()}>
-        <View
-          bg="white"
-          m="1.5"
-          borderRadius="lg"
-          paddingY="2"
-          paddingX="1.5"
-          shadow="3"
-        >
-          <HStack width={"full"} overflow="hidden">
-            <View marginY="auto" maxW={"1/5"}>
-              {local ? (
-                <FontAwesome5 name="store" size={40} color="tomato" />
-              ) : (
-                <Octicons name="package" size={55} color="tomato" />
-              )}
-            </View>
+      <Pressable
+        onPress={() => (toggle ? hideSideButtons() : toggleModal())}
+        onLongPress={() => {
+          if (UserInfo.admin || UserInfo.type === "Store Account")
+            Vibration.vibrate(200);
+          showSideButtons();
+        }}
+      >
+        <HStack>
+          <Animated.View style={{ right: interpolatedLeft, width: "100%" }}>
+            <View
+              bg="white"
+              m="1.5"
+              borderRadius="lg"
+              paddingY="2"
+              paddingX="1.5"
+              shadow="3"
+            >
+              <HStack width={"full"} overflow="hidden">
+                <View marginY="auto" maxW={"1/5"}>
+                  {local ? (
+                    <FontAwesome5 name="store" size={40} color="tomato" />
+                  ) : (
+                    <Octicons name="package" size={55} color="tomato" />
+                  )}
+                </View>
 
-            <VStack marginLeft="2" flexGrow={1} maxW={"3/5"}>
-              <HStack>
-                <Heading fontSize="md" isTruncated>
-                  {local ? storeName : parcelName}
-                </Heading>
-              </HStack>
-              {local ? (
-                <VStack>
-                  <Text fontSize="xs" color="gray.500">
-                    Address : {storeAddress}
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    To : {parcelName}
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    Date: {createdAt}
-                  </Text>
-                </VStack>
-              ) : (
-                <VStack>
-                  <Text fontSize="xs" color="gray.500">
-                    To : {destination}
-                  </Text>
+                <VStack marginLeft="2" flexGrow={1} maxW={"3/5"}>
                   <HStack>
-                    <Text fontSize="xs" color="gray.500">
-                      Date: {createdAt}
-                    </Text>
-                    <Text
-                      bg="tomato"
-                      borderRadius="sm"
-                      paddingX="0.5"
-                      color="white"
-                      fontSize="xs"
-                      marginLeft="1"
-                    >
-                      {paymentValue} DA
-                    </Text>
+                    <Heading fontSize="md" isTruncated>
+                      {local ? storeName : parcelName}
+                    </Heading>
                   </HStack>
-                  <Text fontSize="xs" color="gray.500">
-                    {tracking}
-                  </Text>
+                  {local ? (
+                    <VStack>
+                      <Text fontSize="xs" color="gray.500">
+                        Address : {storeAddress}
+                      </Text>
+                      <Text fontSize="xs" color="gray.500">
+                        To : {parcelName}
+                      </Text>
+                      <Text fontSize="xs" color="gray.500">
+                        Date: {createdAt}
+                      </Text>
+                    </VStack>
+                  ) : (
+                    <VStack>
+                      <Text fontSize="xs" color="gray.500">
+                        To : {destination}
+                      </Text>
+                      <HStack>
+                        <Text fontSize="xs" color="gray.500">
+                          Date: {createdAt}
+                        </Text>
+                        <Text
+                          bg="tomato"
+                          borderRadius="sm"
+                          paddingX="0.5"
+                          color="white"
+                          fontSize="xs"
+                          marginLeft="1"
+                        >
+                          {paymentValue} DA
+                        </Text>
+                      </HStack>
+                      <Text fontSize="xs" color="gray.500">
+                        {tracking}
+                      </Text>
+                    </VStack>
+                  )}
                 </VStack>
-              )}
-            </VStack>
-            <View m="auto" flexGrow={0}>
-              <View alignItems={"center"}>
-                <FontAwesome5 name={icon} size={30} color={color} />
-                <Text
-                  marginTop={"3"}
-                  fontWeight={"bold"}
-                  fontSize="2xs"
-                  color={color}
-                >
-                  {status}
-                </Text>
-              </View>
+                <View m="auto" flexGrow={0}>
+                  <View alignItems={"center"}>
+                    <FontAwesome5 name={icon} size={30} color={color} />
+                    <Text
+                      marginTop={"3"}
+                      fontWeight={"bold"}
+                      fontSize="2xs"
+                      color={color}
+                    >
+                      {status}
+                    </Text>
+                  </View>
+                </View>
+              </HStack>
             </View>
-          </HStack>
-        </View>
+          </Animated.View>
+          <Animated.View style={{ right: interpolatedLeft }}>
+            <VStack marginY="auto">
+              <Pressable
+                style={{
+                  alignSelf: "center",
+                  backgroundColor: "red",
+                  padding: 8,
+                  marginBottom: 2,
+                  borderRadius: 50,
+                  shadowColor: "#000",
+                  shadowOffset: {
+                    width: 0,
+                    height: 2,
+                  },
+                  shadowOpacity: 0.23,
+                  shadowRadius: 2.62,
+                  elevation: 4,
+                }}
+                onPress={() => deleteThisParcel()}
+              >
+                <AntDesign name="delete" size={18} color="white" />
+              </Pressable>
+            </VStack>
+          </Animated.View>
+        </HStack>
       </Pressable>
 
       <Modal isOpen={modalVisible} onClose={toggleModal} size="xl">
@@ -330,7 +395,8 @@ export const Parcel: React.FC<ParcelProps> = ({
                   {phoneNumber}
                 </Button>
               )}
-              {<DeleteButton />}
+              <ConvertButton />
+
               <Button
                 p="1.5"
                 bgColor={"tomato"}
@@ -352,7 +418,6 @@ export const Parcel: React.FC<ParcelProps> = ({
                     setModalVisible(false);
                     return;
                   }
-
                   dispatch(updateStatus(parcel)); //Thunkfunction that updates the parcel to the next status
                   if (parcel.status === "Awaiting Confirmation") {
                     confirmParcel(parcel); //This function adds the parcel id to the parcels array in the userData
@@ -365,6 +430,19 @@ export const Parcel: React.FC<ParcelProps> = ({
           </Modal.Footer>
         </Modal.Content>
       </Modal>
+      <Modal isOpen={isSubmitting}>
+        <Modal.Content maxH="212">
+          <Modal.Header>Processing...Please wait</Modal.Header>
+          <Modal.Body>
+            <Spinner size={"lg"} />
+          </Modal.Body>
+        </Modal.Content>
+      </Modal>
+      <ParcelForm
+        show={toggleAddParcelForm}
+        parcelProp={parcel}
+        toggle={setToggleAddParcelForm}
+      />
     </>
   );
 };

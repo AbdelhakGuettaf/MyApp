@@ -21,7 +21,7 @@ import {
 } from "../components/Parcels/ParcelsSlice";
 import {
   addUnconParcel,
-  reset,
+  resetUncon,
 } from "../components/Parcels/UnconfirmedParcels.slice";
 import {
   collection,
@@ -50,25 +50,44 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
   const { UserInfo } = state;
 
   useEffect(() => {
-    const q = query(
+    dispatch(setUserID(auth.currentUser?.uid));
+    data();
+    let q = query(
       collection(db, "unConfirmedParcels"),
       where("status", "==", "Awaiting Confirmation")
     );
+    if (UserInfo.type === "Store Account") {
+      q = query(
+        collection(db, "unConfirmedParcels"),
+        where("status", "==", "Awaiting Confirmation"),
+        where("storeName", "==", UserInfo.store)
+      );
+    }
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      dispatch(reset());
+      dispatch(resetUncon());
       snapshot.forEach((doc) => {
         dispatch(addUnconParcel(doc.data() as ParcelType));
       });
     });
+    /* const notificationSubscription = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          schedulePushNotification({
+            title: "New Parcel Added!",
+            body: `Destination:  ${change.doc.data().destination}`,
+            sound: true,
+          });
+        }
+      });
+    });
+    if (UserInfo.admin) notificationSubscription();
+*/
+
     return () => {
       unsubscribe();
+      //notificationSubscription();
     };
-  }, []);
-
-  useEffect(() => {
-    dispatch(setUserID(auth.currentUser?.uid));
-    data();
-  }, []);
+  }, [UserInfo.type]);
 
   useEffect(() => {
     if (!UserInfo.admin) return;
@@ -90,6 +109,7 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       unsubscribe();
     };
   }, [UserInfo.admin]);
+
   useEffect(() => {
     if (UserInfo.type !== "Store Account") return;
     getUsers().then((res) =>

@@ -14,14 +14,12 @@ import {
   ScrollView,
   Spinner,
   Modal,
-  Text,
 } from "native-base";
 import { SafeAreaView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   getAuth,
   createUserWithEmailAndPassword,
-  User,
   updateProfile,
 } from "firebase/auth";
 import { db } from "../../app/firebaseConfig";
@@ -257,7 +255,7 @@ const Register: React.FC = ({}) => {
                           }
                           size={5}
                           mr="2"
-                          color={show ? "primary.500" : "muted.400"}
+                          color={show ? "tomato" : "muted.400"}
                           onPress={handleClick}
                         />
                       }
@@ -290,7 +288,7 @@ const Register: React.FC = ({}) => {
                           }
                           size={5}
                           mr="2"
-                          color={show ? "primary.500" : "muted.400"}
+                          color={show ? "tomato" : "muted.400"}
                           onPress={handleClick}
                         />
                       }
@@ -342,11 +340,7 @@ const Register: React.FC = ({}) => {
                       )}
                     </FormControl>
                   )}
-                  <Button
-                    mt="2"
-                    colorScheme="primary"
-                    onPress={() => register()}
-                  >
+                  <Button mt="2" bgColor="tomato" onPress={() => register()}>
                     Sign up
                   </Button>
                 </VStack>
@@ -355,7 +349,6 @@ const Register: React.FC = ({}) => {
           </NativeBaseProvider>
           <Modal isOpen={isSubmitting}>
             <Modal.Content maxH="212">
-              <Modal.CloseButton />
               <Modal.Header>Getting things ready...</Modal.Header>
               <Modal.Body>
                 <Spinner size={"lg"} />
