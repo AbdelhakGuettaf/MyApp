@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import Home from "../screens/Home.screen";
 import SettingsScreen from "../screens/Settings.screen";
 import MyParcels from "../screens/myParcels.screen";
@@ -39,12 +40,14 @@ import {
   addDispatcher,
   DispatcherType,
 } from "../components/Dispatchers/Dispatchers.slice";
+import { Header } from "../components/Header/Header";
 
 interface AppTabsProps {}
 
 const AppTabs: React.FC<AppTabsProps> = ({}) => {
   const dispatch = useAppDispatch();
-  const Tab = createBottomTabNavigator();
+  // const Tab = createBottomTabNavigator();
+  const Tab = createMaterialTopTabNavigator();
   const auth = getAuth();
   const state = useAppSelector((state) => state);
   const { UserInfo } = state;
@@ -232,36 +235,40 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
   return (
     <>
       <NavigationContainer independent={true}>
+        <Header />
         <Tab.Navigator
+          transitionStyle="curl"
+          tabBarPosition="bottom"
           screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName: any;
-
-              if (route.name === "Home") {
-                iconName = focused ? "home" : "home-outline";
-              } else if (route.name === "New") {
-                iconName = focused ? "ios-archive" : "ios-archive-outline";
-              } else if (route.name === "My Parcels") {
-                iconName = focused ? "cube" : "cube-outline";
-              } else if (route.name === "Settings") {
-                iconName = focused ? "settings" : "settings-outline";
-              } else if (route.name === "Users") {
-                iconName = focused ? "person-circle" : "person-circle-outline";
-              } else if (route.name === "Users") {
-                iconName = focused ? "person-circle" : "person-circle-outline";
+            tabBarIcon: ({ focused, color }) => {
+              function getName() {
+                if (route.name === "Home") {
+                  return focused ? "home" : "home-outline";
+                } else if (route.name === "New") {
+                  return focused ? "ios-archive" : "ios-archive-outline";
+                } else if (route.name === "My Parcels") {
+                  return focused ? "cube" : "cube-outline";
+                } else if (route.name === "Settings") {
+                  return focused ? "settings" : "settings-outline";
+                } else if (route.name === "Users") {
+                  return focused ? "person-circle" : "person-circle-outline";
+                } else if (route.name === "Users") {
+                  return focused ? "person-circle" : "person-circle-outline";
+                }
               }
-
-              return <Ionicons name={iconName} size={size} color={color} />;
+              return <Ionicons name={getName()} size={24} color={color} />;
             },
             tabBarActiveTintColor: "tomato",
             tabBarInactiveTintColor: "gray",
+            tabBarIndicatorStyle: { backgroundColor: "tomato" },
           })}
         >
           <Tab.Screen
             name={UserInfo.admin ? "Home" : "New"}
             component={Home}
-            options={{
-              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+            options={
+              {
+                /* headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
               headerLeft: () =>
                 UserInfo.type === "Store Account" ? (
                   <FontAwesome5
@@ -279,8 +286,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                   />
                 ),
               headerStyle: { backgroundColor: "tomato" },
-              headerTintColor: "white",
-            }}
+              headerTintColor: "white",*/
+              }
+            }
           />
 
           <Tab.Screen
@@ -301,8 +309,8 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                     color={focused ? "tomato" : "gray"}
                   />
                 ),
-              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
-              headerLeft: () =>
+              //  headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+              /* headerLeft: () =>
                 UserInfo.type === "Store Account" ? (
                   <FontAwesome5
                     style={{ marginLeft: 8 }}
@@ -319,7 +327,7 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                   />
                 ),
               headerStyle: { backgroundColor: "tomato" },
-              headerTintColor: "white",
+              headerTintColor: "white",*/
             }}
           />
 
@@ -327,8 +335,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
             <Tab.Screen
               name="Users"
               component={UsersScreen}
-              options={{
-                headerTitle: "Users",
+              options={
+                {
+                  /* headerTitle: "Users",
                 headerLeft: () =>
                   UserInfo.type === "Store Account" ? (
                     <FontAwesome5
@@ -346,15 +355,17 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                     />
                   ),
                 headerStyle: { backgroundColor: "tomato" },
-                headerTintColor: "white",
-              }}
+                headerTintColor: "white",*/
+                }
+              }
             />
           )}
           <Tab.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{
-              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+            options={
+              {
+                /*headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
               headerLeft: () =>
                 UserInfo.type === "Store Account" ? (
                   <FontAwesome5
@@ -372,8 +383,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                   />
                 ),
               headerStyle: { backgroundColor: "tomato" },
-              headerTintColor: "white",
-            }}
+              headerTintColor: "white",*/
+              }
+            }
           />
         </Tab.Navigator>
       </NavigationContainer>

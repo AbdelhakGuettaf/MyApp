@@ -29,8 +29,8 @@ const SettingsScreen: React.FC<SettingsProps> = ({ navigation, route }) => {
     state.Parcels.map((parcel) => {
       if (
         parcel.status === "Awaiting Confirmation" ||
-        parcel.status === "Payed" ||
-        parcel.status === ""
+        parcel.status === "Awaiting Pickup" ||
+        parcel.status === "Payed"
       )
         return;
       sum = sum + parseInt(parcel.paymentValue);

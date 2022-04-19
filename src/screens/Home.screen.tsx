@@ -4,9 +4,9 @@ import { useAppDispatch, useAppSelector } from "../app/hooks";
 import React, { useEffect, useState } from "react";
 import { addParcelToDB } from "../app/utils";
 import { communes } from "../app/locationData.json";
-import { AntDesign } from "@expo/vector-icons";
 import { ParcelType } from "../components/Parcels/ParcelsSlice";
 
+import { AntDesign, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Center,

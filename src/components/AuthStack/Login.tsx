@@ -151,7 +151,7 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
                 fontWeight: "medium",
                 fontSize: "sm",
               }}
-              onPress={() => navigation.navigate("Register")}
+              //onPress={() => navigation.navigate("Register")}
             >
               Sign Up
             </Link>
