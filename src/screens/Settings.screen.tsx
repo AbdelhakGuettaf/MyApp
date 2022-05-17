@@ -132,7 +132,7 @@ const SettingsScreen: React.FC<SettingsProps> = ({ navigation, route }) => {
             </Heading>
           </Modal.Header>
           <Modal.Body p="0">
-            <Register />
+            <Register goBack={toggleModal} />
           </Modal.Body>
         </Modal.Content>
       </Modal>

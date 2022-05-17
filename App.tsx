@@ -8,6 +8,7 @@ import AppTabs from "./src/navigation/AppTabs.nav";
 import { AuthScreen } from "./src/navigation/Auth.nav";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { ActivityIndicator, LogBox, StatusBar, View } from "react-native";
+import { Text } from "react-native-svg";
 
 LogBox.ignoreLogs([
   "Setting a timer for a long",
@@ -43,7 +44,8 @@ export default function App() {
           height: "100%",
         }}
       >
-        <ActivityIndicator size={100} color="#03bafc" />
+        <Text>Checking User Data...</Text>
+        <ActivityIndicator size={100} color="tomato" />
       </View>
     );
   const theme = extendTheme({

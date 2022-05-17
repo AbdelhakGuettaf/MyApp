@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
@@ -41,20 +41,31 @@ import {
   DispatcherType,
 } from "../components/Dispatchers/Dispatchers.slice";
 import { Header } from "../components/Header/Header";
+import { Spinner, Text, View } from "native-base";
+import { ActivityIndicator } from "react-native";
 
 interface AppTabsProps {}
 
 const AppTabs: React.FC<AppTabsProps> = ({}) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingText, setLoadingText] = useState<String[]>([
+    "Getting things ready...",
+    "Fetching Data...",
+    "Fetching User Data...",
+  ]);
   const dispatch = useAppDispatch();
-  // const Tab = createBottomTabNavigator();
+  //const Tab = createBottomTabNavigator();
   const Tab = createMaterialTopTabNavigator();
   const auth = getAuth();
   const state = useAppSelector((state) => state);
   const { UserInfo } = state;
 
   useEffect(() => {
+    setLoadingText([...loadingText.slice(1)]);
     dispatch(setUserID(auth.currentUser?.uid));
-    data();
+    data()
+      .then(() => setLoadingText([...loadingText.slice(1)]))
+      .finally(() => setLoading(false));
     let q = query(
       collection(db, "unConfirmedParcels"),
       where("status", "==", "Awaiting Confirmation")
@@ -72,6 +83,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
         dispatch(addUnconParcel(doc.data() as ParcelType));
       });
     });
+    if (UserInfo.type === "Dispatcher Accout" && loadingText.length <= 2) {
+      setLoading(false);
+    }
     /* const notificationSubscription = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
@@ -94,9 +108,12 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
 
   useEffect(() => {
     if (!UserInfo.admin) return;
-    getUsers().then((res) =>
-      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
-    );
+    getUsers()
+      .then((res) =>
+        res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+      )
+      .then(() => setLoadingText([...loadingText.slice(1)]))
+      .finally(() => setLoading(false));
     const q = query(collection(db, "parcels"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
@@ -115,9 +132,12 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
 
   useEffect(() => {
     if (UserInfo.type !== "Store Account") return;
-    getUsers().then((res) =>
-      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
-    );
+    getUsers()
+      .then((res) =>
+        res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+      )
+      .then(() => setLoadingText([...loadingText.slice(1)]))
+      .finally(() => setLoading(false));
     const q = query(
       collection(db, "parcels"),
       where("storeName", "==", UserInfo.store)
@@ -144,47 +164,45 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       COLL_REF,
       where("deliveredBy", "==", auth.currentUser?.uid)
     );
-    auth.currentUser?.uid
-      ? getData(
-          "/main/userList/users",
-          auth.currentUser.uid.toString(),
-          "document"
-        ).then((res) => {
-          if (res === undefined) throw new Error("No user document found");
-          dispatch(setParcels(res.parcels));
-          if (!res?.id) {
-            const DOC_REF = doc(
-              db,
-              `/main/userList/users/${auth.currentUser?.uid}`
-            );
-            const set = async () => {
-              await updateDoc(DOC_REF, { id: auth.currentUser?.uid });
-            };
-            set().catch((e) => {
-              throw new Error(e);
-            });
-          }
-          if (res?.admin) {
-            userPerm = true;
-            dispatch(setUserPerm());
-          }
-          let name = res.firstName + " " + res.lastName;
-          let data = {
-            type: res.accountType,
-            name: name,
-            phoneNumber: res.phoneNumber,
-            store: "",
-            storeAddress: "",
+    auth.currentUser?.uid &&
+      getData(
+        "/main/userList/users",
+        auth.currentUser.uid.toString(),
+        "document"
+      ).then((res) => {
+        if (res === undefined) throw new Error("No user document found");
+        dispatch(setParcels(res.parcels));
+        if (!res?.id) {
+          const DOC_REF = doc(
+            db,
+            `/main/userList/users/${auth.currentUser?.uid}`
+          );
+          const set = async () => {
+            await updateDoc(DOC_REF, { id: auth.currentUser?.uid });
           };
-          if (res.accountType === "Store Account") {
-            data = { ...data, store: res.store, storeAddress: res.address };
-          }
-          dispatch(setUserInfo(data));
-        })
-      : null;
-    const qLess = await getDocs(COLL_REF);
-    const queued = await getDocs(q);
+          set().catch((e) => {
+            throw new Error(e);
+          });
+        }
+        if (res?.admin) {
+          userPerm = true;
+          dispatch(setUserPerm());
+        }
+        let name = res.firstName + " " + res.lastName;
+        let data = {
+          type: res.accountType,
+          name: name,
+          phoneNumber: res.phoneNumber,
+          store: "",
+          storeAddress: "",
+        };
+        if (res.accountType === "Store Account") {
+          data = { ...data, store: res.store, storeAddress: res.address };
+        }
+        dispatch(setUserInfo(data));
+      });
     if (userPerm) {
+      const qLess = await getDocs(COLL_REF);
       qLess.forEach((doc) => dispatch(addParcel(doc.data() as ParcelType)));
       const q = query(
         collection(db, "unConfirmedParcels"),
@@ -192,6 +210,7 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       );
       return;
     }
+    const queued = await getDocs(q);
     queued.forEach((doc) => dispatch(addParcel(doc.data() as ParcelType)));
   };
   /* 
@@ -232,10 +251,25 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       }
       
       */
+  if (loading)
+    return (
+      <View
+        style={{
+          alignContent: "center",
+          justifyContent: "center",
+          height: "100%",
+        }}
+      >
+        <ActivityIndicator size={60} color="tomato" />
+        <Text mt="10" textAlign={"center"}>
+          {loadingText[0]}
+        </Text>
+      </View>
+    );
   return (
     <>
+      <Header />
       <NavigationContainer independent={true}>
-        <Header />
         <Tab.Navigator
           transitionStyle="curl"
           tabBarPosition="bottom"

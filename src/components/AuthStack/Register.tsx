@@ -14,6 +14,7 @@ import {
   ScrollView,
   Spinner,
   Modal,
+  Select,
 } from "native-base";
 import { SafeAreaView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -24,7 +25,6 @@ import {
 } from "firebase/auth";
 import { db } from "../../app/firebaseConfig";
 import { doc, setDoc } from "@firebase/firestore";
-import { Picker } from "@react-native-picker/picker";
 
 type error = {
   store?: string;
@@ -49,7 +49,11 @@ type formState = {
   location: [];
 };
 
-const Register: React.FC = ({}) => {
+interface Props {
+  goBack?: () => void;
+}
+
+const Register: React.FC<Props> = ({ goBack }) => {
   const [formStateData, setFormstate] = useState<formState>({
     accountType: "dispatcher",
     storeAddress: "",
@@ -128,10 +132,17 @@ const Register: React.FC = ({}) => {
           accountType: accountType,
           address: storeAddress,
           store: storeName,
-        }).catch((e) => {
-          setIsSubmitting(false);
-          alert(e.message);
-        });
+        })
+          .then(() => {
+            if (accountType === "Store Account") {
+              setIsSubmitting(false);
+              goBack;
+            }
+          })
+          .catch((e) => {
+            setIsSubmitting(false);
+            alert(e.message);
+          });
       })
       .catch((error) => {
         setIsSubmitting(false);
@@ -210,7 +221,7 @@ const Register: React.FC = ({}) => {
                     <Input
                       placeholder="Email@email.com"
                       onChangeText={(text) =>
-                        setFormstate({ ...formStateData, email: text })
+                        setFormstate({ ...formStateData, email: text.trim() })
                       }
                     />
                     {errors.nameError && (
@@ -301,7 +312,7 @@ const Register: React.FC = ({}) => {
                   </FormControl>
                   <FormControl p="1" borderRadius={"lg"} bg={"gray.100"}>
                     <FormControl.Label>Account Type</FormControl.Label>
-                    <Picker
+                    <Select
                       selectedValue={accountType}
                       onValueChange={(itemValue) =>
                         setFormstate({
@@ -310,14 +321,14 @@ const Register: React.FC = ({}) => {
                         })
                       }
                     >
-                      <Picker.Item
+                      <Select.Item
                         label="Dispatcher"
-                        value={"Dispatcher Account"}
+                        value="Dispatcher Account"
                       />
-                      <Picker.Item label="Store" value={"Store Account"} />
-                    </Picker>
+                      <Select.Item label="Store" value="Store Account" />
+                    </Select>
                   </FormControl>
-                  {accountType === "store" && (
+                  {accountType === "Store Account" && (
                     <FormControl isRequired isInvalid={"store" in errors}>
                       <FormControl.Label>Store Name</FormControl.Label>
                       <Input

@@ -35,9 +35,9 @@ const AuthStack: React.FC<LoginProps> = ({ navigation, route }) => {
 
   const login = async () => {
     setIsSubmitting(true);
-    await signInWithEmailAndPassword(auth, loginEmail, password)
-      .catch((error) => alert(error.message))
-      .finally(() => setIsSubmitting(false));
+    await signInWithEmailAndPassword(auth, loginEmail, password).catch(
+      (error) => (setIsSubmitting(false), alert(error.message))
+    );
   };
   return (
     <Center w="100%">

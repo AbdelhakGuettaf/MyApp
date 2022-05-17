@@ -6,4 +6,4 @@ type AuthStackParamList = {
 };
 
 export type LoginProps = StackScreenProps<AuthStackParamList, "Login">;
-//export type RegisterProps = StackScreenProps<AuthStackParamList, "Register">;
+export type RegisterProps = StackScreenProps<AuthStackParamList, "Register">;

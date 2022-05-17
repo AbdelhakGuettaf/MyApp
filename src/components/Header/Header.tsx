@@ -12,7 +12,7 @@ export const Header: React.FC<HeaderProps> = ({}) => {
     <View h={"8%"} bgColor="tomato" px="3">
       <HStack my="auto">
         {TYPE ? (
-          <FontAwesome5 name="store-alt" size={50} color="white" />
+          <FontAwesome5 name="store-alt" size={35} color="white" />
         ) : (
           <AntDesign name="user" size={50} color="white" />
         )}
