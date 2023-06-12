@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import Home from "../screens/Home.screen";
 import SettingsScreen from "../screens/Settings.screen";
 import MyParcels from "../screens/myParcels.screen";
@@ -21,7 +22,7 @@ import {
 } from "../components/Parcels/ParcelsSlice";
 import {
   addUnconParcel,
-  reset,
+  resetUncon,
 } from "../components/Parcels/UnconfirmedParcels.slice";
 import {
   collection,
@@ -39,42 +40,80 @@ import {
   addDispatcher,
   DispatcherType,
 } from "../components/Dispatchers/Dispatchers.slice";
+import { Header } from "../components/Header/Header";
+import { Spinner, Text, View } from "native-base";
+import { ActivityIndicator } from "react-native";
 
 interface AppTabsProps {}
 
 const AppTabs: React.FC<AppTabsProps> = ({}) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingText, setLoadingText] = useState<String[]>([
+    "Getting things ready...",
+    "Fetching Data...",
+    "Fetching User Data...",
+  ]);
   const dispatch = useAppDispatch();
-  const Tab = createBottomTabNavigator();
+  //const Tab = createBottomTabNavigator();
+  const Tab = createMaterialTopTabNavigator();
   const auth = getAuth();
   const state = useAppSelector((state) => state);
   const { UserInfo } = state;
 
   useEffect(() => {
-    const q = query(
+    setLoadingText([...loadingText.slice(1)]);
+    dispatch(setUserID(auth.currentUser?.uid));
+    data()
+      .then(() => setLoadingText([...loadingText.slice(1)]))
+      .finally(() => setLoading(false));
+    let q = query(
       collection(db, "unConfirmedParcels"),
       where("status", "==", "Awaiting Confirmation")
     );
+    if (UserInfo.type === "Store Account") {
+      q = query(
+        collection(db, "unConfirmedParcels"),
+        where("status", "==", "Awaiting Confirmation"),
+        where("storeName", "==", UserInfo.store)
+      );
+    }
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      dispatch(reset());
+      dispatch(resetUncon());
       snapshot.forEach((doc) => {
         dispatch(addUnconParcel(doc.data() as ParcelType));
       });
     });
+    if (UserInfo.type === "Dispatcher Accout" && loadingText.length <= 2) {
+      setLoading(false);
+    }
+    /* const notificationSubscription = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          schedulePushNotification({
+            title: "New Parcel Added!",
+            body: `Destination:  ${change.doc.data().destination}`,
+            sound: true,
+          });
+        }
+      });
+    });
+    if (UserInfo.admin) notificationSubscription();
+*/
+
     return () => {
       unsubscribe();
+      //notificationSubscription();
     };
-  }, []);
-
-  useEffect(() => {
-    dispatch(setUserID(auth.currentUser?.uid));
-    data();
-  }, []);
+  }, [UserInfo.type]);
 
   useEffect(() => {
     if (!UserInfo.admin) return;
-    getUsers().then((res) =>
-      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
-    );
+    getUsers()
+      .then((res) =>
+        res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+      )
+      .then(() => setLoadingText([...loadingText.slice(1)]))
+      .finally(() => setLoading(false));
     const q = query(collection(db, "parcels"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
@@ -90,11 +129,15 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       unsubscribe();
     };
   }, [UserInfo.admin]);
+
   useEffect(() => {
     if (UserInfo.type !== "Store Account") return;
-    getUsers().then((res) =>
-      res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
-    );
+    getUsers()
+      .then((res) =>
+        res.map((user) => dispatch(addDispatcher(user as DispatcherType)))
+      )
+      .then(() => setLoadingText([...loadingText.slice(1)]))
+      .finally(() => setLoading(false));
     const q = query(
       collection(db, "parcels"),
       where("storeName", "==", UserInfo.store)
@@ -121,47 +164,45 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       COLL_REF,
       where("deliveredBy", "==", auth.currentUser?.uid)
     );
-    auth.currentUser?.uid
-      ? getData(
-          "/main/userList/users",
-          auth.currentUser.uid.toString(),
-          "document"
-        ).then((res) => {
-          if (res === undefined) throw new Error("No user document found");
-          dispatch(setParcels(res.parcels));
-          if (!res?.id) {
-            const DOC_REF = doc(
-              db,
-              `/main/userList/users/${auth.currentUser?.uid}`
-            );
-            const set = async () => {
-              await updateDoc(DOC_REF, { id: auth.currentUser?.uid });
-            };
-            set().catch((e) => {
-              throw new Error(e);
-            });
-          }
-          if (res?.admin) {
-            userPerm = true;
-            dispatch(setUserPerm());
-          }
-          let name = res.firstName + " " + res.lastName;
-          let data = {
-            type: res.accountType,
-            name: name,
-            phoneNumber: res.phoneNumber,
-            store: "",
-            storeAddress: "",
+    auth.currentUser?.uid &&
+      getData(
+        "/main/userList/users",
+        auth.currentUser.uid.toString(),
+        "document"
+      ).then((res) => {
+        if (res === undefined) throw new Error("No user document found");
+        dispatch(setParcels(res.parcels));
+        if (!res?.id) {
+          const DOC_REF = doc(
+            db,
+            `/main/userList/users/${auth.currentUser?.uid}`
+          );
+          const set = async () => {
+            await updateDoc(DOC_REF, { id: auth.currentUser?.uid });
           };
-          if (res.accountType === "Store Account") {
-            data = { ...data, store: res.store, storeAddress: res.address };
-          }
-          dispatch(setUserInfo(data));
-        })
-      : null;
-    const qLess = await getDocs(COLL_REF);
-    const queued = await getDocs(q);
+          set().catch((e) => {
+            throw new Error(e);
+          });
+        }
+        if (res?.admin) {
+          userPerm = true;
+          dispatch(setUserPerm());
+        }
+        let name = res.firstName + " " + res.lastName;
+        let data = {
+          type: res.accountType,
+          name: name,
+          phoneNumber: res.phoneNumber,
+          store: "",
+          storeAddress: "",
+        };
+        if (res.accountType === "Store Account") {
+          data = { ...data, store: res.store, storeAddress: res.address };
+        }
+        dispatch(setUserInfo(data));
+      });
     if (userPerm) {
+      const qLess = await getDocs(COLL_REF);
       qLess.forEach((doc) => dispatch(addParcel(doc.data() as ParcelType)));
       const q = query(
         collection(db, "unConfirmedParcels"),
@@ -169,6 +210,7 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       );
       return;
     }
+    const queued = await getDocs(q);
     queued.forEach((doc) => dispatch(addParcel(doc.data() as ParcelType)));
   };
   /* 
@@ -209,39 +251,58 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
       }
       
       */
+  if (loading)
+    return (
+      <View
+        style={{
+          alignContent: "center",
+          justifyContent: "center",
+          height: "100%",
+        }}
+      >
+        <ActivityIndicator size={60} color="tomato" />
+        <Text mt="10" textAlign={"center"}>
+          {loadingText[0]}
+        </Text>
+      </View>
+    );
   return (
     <>
+      <Header />
       <NavigationContainer independent={true}>
         <Tab.Navigator
+          transitionStyle="curl"
+          tabBarPosition="bottom"
           screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName: any;
-
-              if (route.name === "Home") {
-                iconName = focused ? "home" : "home-outline";
-              } else if (route.name === "New") {
-                iconName = focused ? "ios-archive" : "ios-archive-outline";
-              } else if (route.name === "My Parcels") {
-                iconName = focused ? "cube" : "cube-outline";
-              } else if (route.name === "Settings") {
-                iconName = focused ? "settings" : "settings-outline";
-              } else if (route.name === "Users") {
-                iconName = focused ? "person-circle" : "person-circle-outline";
-              } else if (route.name === "Users") {
-                iconName = focused ? "person-circle" : "person-circle-outline";
+            tabBarIcon: ({ focused, color }) => {
+              function getName() {
+                if (route.name === "Home") {
+                  return focused ? "home" : "home-outline";
+                } else if (route.name === "New") {
+                  return focused ? "ios-archive" : "ios-archive-outline";
+                } else if (route.name === "My Parcels") {
+                  return focused ? "cube" : "cube-outline";
+                } else if (route.name === "Settings") {
+                  return focused ? "settings" : "settings-outline";
+                } else if (route.name === "Users") {
+                  return focused ? "person-circle" : "person-circle-outline";
+                } else if (route.name === "Users") {
+                  return focused ? "person-circle" : "person-circle-outline";
+                }
               }
-
-              return <Ionicons name={iconName} size={size} color={color} />;
+              return <Ionicons name={getName()} size={24} color={color} />;
             },
             tabBarActiveTintColor: "tomato",
             tabBarInactiveTintColor: "gray",
+            tabBarIndicatorStyle: { backgroundColor: "tomato" },
           })}
         >
           <Tab.Screen
             name={UserInfo.admin ? "Home" : "New"}
             component={Home}
-            options={{
-              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+            options={
+              {
+                /* headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
               headerLeft: () =>
                 UserInfo.type === "Store Account" ? (
                   <FontAwesome5
@@ -259,8 +320,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                   />
                 ),
               headerStyle: { backgroundColor: "tomato" },
-              headerTintColor: "white",
-            }}
+              headerTintColor: "white",*/
+              }
+            }
           />
 
           <Tab.Screen
@@ -281,8 +343,8 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                     color={focused ? "tomato" : "gray"}
                   />
                 ),
-              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
-              headerLeft: () =>
+              //  headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+              /* headerLeft: () =>
                 UserInfo.type === "Store Account" ? (
                   <FontAwesome5
                     style={{ marginLeft: 8 }}
@@ -299,7 +361,7 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                   />
                 ),
               headerStyle: { backgroundColor: "tomato" },
-              headerTintColor: "white",
+              headerTintColor: "white",*/
             }}
           />
 
@@ -307,8 +369,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
             <Tab.Screen
               name="Users"
               component={UsersScreen}
-              options={{
-                headerTitle: "Users",
+              options={
+                {
+                  /* headerTitle: "Users",
                 headerLeft: () =>
                   UserInfo.type === "Store Account" ? (
                     <FontAwesome5
@@ -326,15 +389,17 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                     />
                   ),
                 headerStyle: { backgroundColor: "tomato" },
-                headerTintColor: "white",
-              }}
+                headerTintColor: "white",*/
+                }
+              }
             />
           )}
           <Tab.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{
-              headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
+            options={
+              {
+                /*headerTitle: UserInfo.admin ? "Admin Acount" : UserInfo.type,
               headerLeft: () =>
                 UserInfo.type === "Store Account" ? (
                   <FontAwesome5
@@ -352,8 +417,9 @@ const AppTabs: React.FC<AppTabsProps> = ({}) => {
                   />
                 ),
               headerStyle: { backgroundColor: "tomato" },
-              headerTintColor: "white",
-            }}
+              headerTintColor: "white",*/
+              }
+            }
           />
         </Tab.Navigator>
       </NavigationContainer>

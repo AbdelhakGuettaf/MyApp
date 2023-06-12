@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { DispatcherType } from "./Dispatchers.slice";
-import { MaterialIcons, Octicons } from "@expo/vector-icons";
+import { MaterialIcons, Octicons, FontAwesome5 } from "@expo/vector-icons";
 import {
   Heading,
   HStack,
@@ -19,13 +19,23 @@ interface DispatcherProps {
 }
 
 export const Dispatcher: React.FC<DispatcherProps> = ({
-  user: { firstName, lastName, phoneNumber, id },
+  user: { firstName, lastName, phoneNumber, id, accountType, parcels },
 }) => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const Parcels = useAppSelector((state) => state.Parcels);
   const toggleModal = () => {
     setModalVisible(!modalVisible);
   };
+  function getDebt() {
+    return Parcels.filter(
+      (parcel) =>
+        parcel.deliveredBy === id &&
+        parcel.status !== "Payed" &&
+        parcel.status !== "Awaiting Pickup"
+    ).reduce((curr, parcel) => {
+      return curr + parseInt(parcel.paymentValue);
+    }, 0);
+  }
   return (
     <>
       <Pressable onPress={() => toggleModal()}>
@@ -39,7 +49,11 @@ export const Dispatcher: React.FC<DispatcherProps> = ({
         >
           <HStack>
             <View marginY="auto" maxW={"1/5"}>
-              <Octicons name="person" size={55} color="tomato" />
+              {accountType === "Store Account" ? (
+                <FontAwesome5 name="store-alt" size={35} color="tomato" />
+              ) : (
+                <Octicons name="person" size={55} color="tomato" />
+              )}
             </View>
             <View
               justifyContent={"center"}
@@ -50,6 +64,7 @@ export const Dispatcher: React.FC<DispatcherProps> = ({
               <Heading fontSize="md" marginLeft={15} isTruncated>
                 {firstName + " " + lastName}
               </Heading>
+              <Text marginLeft={15}>{getDebt()}</Text>
             </View>
             <View justifyContent={"center"} flexGrow="0">
               <Pressable

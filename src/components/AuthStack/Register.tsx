@@ -14,19 +14,17 @@ import {
   ScrollView,
   Spinner,
   Modal,
-  Text,
+  Select,
 } from "native-base";
 import { SafeAreaView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   getAuth,
   createUserWithEmailAndPassword,
-  User,
   updateProfile,
 } from "firebase/auth";
 import { db } from "../../app/firebaseConfig";
 import { doc, setDoc } from "@firebase/firestore";
-import { Picker } from "@react-native-picker/picker";
 
 type error = {
   store?: string;
@@ -51,7 +49,11 @@ type formState = {
   location: [];
 };
 
-const Register: React.FC = ({}) => {
+interface Props {
+  goBack?: () => void;
+}
+
+const Register: React.FC<Props> = ({ goBack }) => {
   const [formStateData, setFormstate] = useState<formState>({
     accountType: "dispatcher",
     storeAddress: "",
@@ -130,10 +132,17 @@ const Register: React.FC = ({}) => {
           accountType: accountType,
           address: storeAddress,
           store: storeName,
-        }).catch((e) => {
-          setIsSubmitting(false);
-          alert(e.message);
-        });
+        })
+          .then(() => {
+            if (accountType === "Store Account") {
+              setIsSubmitting(false);
+              goBack;
+            }
+          })
+          .catch((e) => {
+            setIsSubmitting(false);
+            alert(e.message);
+          });
       })
       .catch((error) => {
         setIsSubmitting(false);
@@ -212,7 +221,7 @@ const Register: React.FC = ({}) => {
                     <Input
                       placeholder="Email@email.com"
                       onChangeText={(text) =>
-                        setFormstate({ ...formStateData, email: text })
+                        setFormstate({ ...formStateData, email: text.trim() })
                       }
                     />
                     {errors.nameError && (
@@ -257,7 +266,7 @@ const Register: React.FC = ({}) => {
                           }
                           size={5}
                           mr="2"
-                          color={show ? "primary.500" : "muted.400"}
+                          color={show ? "tomato" : "muted.400"}
                           onPress={handleClick}
                         />
                       }
@@ -290,7 +299,7 @@ const Register: React.FC = ({}) => {
                           }
                           size={5}
                           mr="2"
-                          color={show ? "primary.500" : "muted.400"}
+                          color={show ? "tomato" : "muted.400"}
                           onPress={handleClick}
                         />
                       }
@@ -303,7 +312,7 @@ const Register: React.FC = ({}) => {
                   </FormControl>
                   <FormControl p="1" borderRadius={"lg"} bg={"gray.100"}>
                     <FormControl.Label>Account Type</FormControl.Label>
-                    <Picker
+                    <Select
                       selectedValue={accountType}
                       onValueChange={(itemValue) =>
                         setFormstate({
@@ -312,14 +321,14 @@ const Register: React.FC = ({}) => {
                         })
                       }
                     >
-                      <Picker.Item
+                      <Select.Item
                         label="Dispatcher"
-                        value={"Dispatcher Account"}
+                        value="Dispatcher Account"
                       />
-                      <Picker.Item label="Store" value={"Store Account"} />
-                    </Picker>
+                      <Select.Item label="Store" value="Store Account" />
+                    </Select>
                   </FormControl>
-                  {accountType === "store" && (
+                  {accountType === "Store Account" && (
                     <FormControl isRequired isInvalid={"store" in errors}>
                       <FormControl.Label>Store Name</FormControl.Label>
                       <Input
@@ -342,11 +351,7 @@ const Register: React.FC = ({}) => {
                       )}
                     </FormControl>
                   )}
-                  <Button
-                    mt="2"
-                    colorScheme="primary"
-                    onPress={() => register()}
-                  >
+                  <Button mt="2" bgColor="tomato" onPress={() => register()}>
                     Sign up
                   </Button>
                 </VStack>
@@ -355,7 +360,6 @@ const Register: React.FC = ({}) => {
           </NativeBaseProvider>
           <Modal isOpen={isSubmitting}>
             <Modal.Content maxH="212">
-              <Modal.CloseButton />
               <Modal.Header>Getting things ready...</Modal.Header>
               <Modal.Body>
                 <Spinner size={"lg"} />

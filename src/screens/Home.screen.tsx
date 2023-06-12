@@ -4,9 +4,9 @@ import { useAppDispatch, useAppSelector } from "../app/hooks";
 import React, { useEffect, useState } from "react";
 import { addParcelToDB } from "../app/utils";
 import { communes } from "../app/locationData.json";
-import { AntDesign } from "@expo/vector-icons";
 import { ParcelType } from "../components/Parcels/ParcelsSlice";
 
+import { AntDesign, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Center,
@@ -23,7 +23,7 @@ import {
   WarningOutlineIcon,
 } from "native-base";
 import { ScrollView } from "react-native-gesture-handler";
-import { Alert, Pressable } from "react-native";
+import { Alert, Pressable, Vibration } from "react-native";
 
 const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   const dispatch = useAppDispatch();
@@ -99,7 +99,8 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
           style={{
             alignSelf: "center",
             backgroundColor: "rgba(256, 256, 256, 1)",
-
+            position: "absolute",
+            bottom: 3,
             padding: 12,
             borderRadius: 50,
             marginBottom: 10,
@@ -113,7 +114,9 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
 
             elevation: 4,
           }}
-          onPress={() => toggleModal()}
+          onPress={() => {
+            Vibration.vibrate(100), toggleModal();
+          }}
         >
           <AntDesign name="plus" size={24} color="black" />
         </Pressable>
@@ -124,7 +127,7 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   return (
     <>
       <Parcels status="Awaiting Confirmation" />
-      <RenderButton />
+
       <Center>
         <Modal isOpen={toggleForm} onClose={toggleModal} size="xl">
           <Modal.Content>
@@ -264,6 +267,7 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
           </Modal.Content>
         </Modal>
       </Center>
+      <RenderButton />
     </>
   );
 };

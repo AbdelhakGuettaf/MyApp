@@ -16,5 +16,11 @@ Admin should be able to unconfirm a parcel if a dispatcher takes too long to pic
        add an option for dispatcher to provide an estimate time for arrival aswell as a cancel button
 }
 
-Add notifications for new parcels
+Admin can convert a store parcel for dispatchers to see
+
+Admin should be able to edit any parcel
+
+Add notifications for new parcels <-- code added but requires a push service
+
+
 

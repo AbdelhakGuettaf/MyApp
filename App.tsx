@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { InitApp } from "./src/app/firebaseConfig";
 import { Provider } from "react-redux";
 import { store } from "./src/store/store";
@@ -7,7 +7,8 @@ import { extendTheme, NativeBaseProvider } from "native-base";
 import AppTabs from "./src/navigation/AppTabs.nav";
 import { AuthScreen } from "./src/navigation/Auth.nav";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { ActivityIndicator, LogBox, View } from "react-native";
+import { ActivityIndicator, LogBox, StatusBar, View } from "react-native";
+import { Text } from "react-native-svg";
 
 LogBox.ignoreLogs([
   "Setting a timer for a long",
@@ -43,7 +44,8 @@ export default function App() {
           height: "100%",
         }}
       >
-        <ActivityIndicator size={100} color="#03bafc" />
+        <Text>Checking User Data...</Text>
+        <ActivityIndicator size={100} color="tomato" />
       </View>
     );
   const theme = extendTheme({
@@ -54,6 +56,7 @@ export default function App() {
   });
   return (
     <Provider store={store}>
+      <StatusBar />
       <NativeBaseProvider theme={theme}>
         {loggedIn ? <AppTabs /> : <AuthScreen />}
       </NativeBaseProvider>

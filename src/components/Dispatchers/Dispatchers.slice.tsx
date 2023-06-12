@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export type DispatcherType = {
   admin: boolean;
+  accountType: string;
   firstName: string;
   lastName: string;
   location: string[];
